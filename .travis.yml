@@ -1,0 +1,9 @@
+language: go
+go:
+  - "1.11"
+sudo: required
+script: ./ci.sh
+branches:
+  only:
+  - master
+  - dev

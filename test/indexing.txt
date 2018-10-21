@@ -15,32 +15,32 @@ Create index from relative path
     Length should be    ${lines}    4
 
     ${line}=                Get from list   ${lines}  0
-    Should match regexp     ${line}    {"path":"test/resources/index","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"test/resources/index","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
     ${line}=                Get from list   ${lines}  1
-    Should match regexp     ${line}    {"path":"test/resources/index/file-a.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"test/resources/index/file-a.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
     ${line}=                Get from list   ${lines}  2
-    Should match regexp     ${line}    {"path":"test/resources/index/subdir","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"test/resources/index/subdir","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
     ${line}=                Get from list   ${lines}  3
-    Should match regexp     ${line}    {"path":"test/resources/index/subdir/file-b.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"test/resources/index/subdir/file-b.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
 Create index from absolute path
     ${lines}=   Create index from ${absolute path}
     Length should be    ${lines}    4
 
     ${line}=                Get from list   ${lines}  0
-    Should match regexp     ${line}    {"path":"${CURDIR}/resources/index","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"${CURDIR}/resources/index","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
     ${line}=                Get from list   ${lines}  1
-    Should match regexp     ${line}    {"path":"${CURDIR}/resources/index/file-a.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"${CURDIR}/resources/index/file-a.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
     ${line}=                Get from list   ${lines}  2
-    Should match regexp     ${line}    {"path":"${CURDIR}/resources/index/subdir","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"${CURDIR}/resources/index/subdir","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
     ${line}=                Get from list   ${lines}  3
-    Should match regexp     ${line}    {"path":"${CURDIR}/resources/index/subdir/file-b.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"${CURDIR}/resources/index/subdir/file-b.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
 Create index without recursing
     ${result}=  Run process  ${indexer bin}  --recursive\=false  ${relative path}
@@ -49,10 +49,10 @@ Create index without recursing
     Length should be    ${lines}    2
 
     ${line}=                Get from list   ${lines}  0
-    Should match regexp     ${line}    {"path":"test/resources/index","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"test/resources/index","size":0,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
     ${line}=                Get from list   ${lines}  1
-    Should match regexp     ${line}    {"path":"test/resources/index/file-a.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\.\\d+Z","mode":\\d+
+    Should match regexp     ${line}    {"path":"test/resources/index/file-a.txt","size":10,"modifiedTime":"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z","mode":\\d+
 
 Create index from missing path
     ${result}=  Run process  ${indexer bin}  /tmp/missing/path
