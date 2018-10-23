@@ -11,8 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type fileFormatFunc func(f model.File)
-
 func main() {
 	recursive := true
 	flag.BoolVar(&recursive, "recursive", true, "Index path recursively")
