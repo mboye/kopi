@@ -1,0 +1,4 @@
+{"path":"test/resources/index","size":0,"modifiedTime":"2018-10-21T19:09:56.262438138Z","mode":2147484141}
+{"path":"test/resources/index/file-a.txt","size":10,"modifiedTime":"2018-10-21T19:09:56.262279395Z","mode":420}
+{"path":"test/resources/index/subdir","size":0,"modifiedTime":"2018-10-21T19:09:56.262517885Z","mode":2147484141}
+{"path":"test/resources/index/subdir/file-b.txt","size":10,"modifiedTime":"2018-10-21T19:09:56.262644442Z","mode":420}
