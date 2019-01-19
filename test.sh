@@ -2,5 +2,5 @@
 set -x
 ./build.sh
 robot \
-    test/indexing.txt \
-    test/diffing.txt
+    test/indexing.robot \
+    test/diffing.robot
