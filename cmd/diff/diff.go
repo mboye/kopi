@@ -69,7 +69,7 @@ func loadIndex(path string) (index.Index, error) {
 func markIndexChanges(indexA, indexB index.Index) {
 	diffWalker := func(pathB string, fileB *model.File) error {
 		if fileA := indexA.Find(pathB); fileA != nil {
-			if *fileA != *fileB {
+			if !model.FilesEqual(fileA, fileB) {
 				fileB.Modified = true
 			}
 		} else {

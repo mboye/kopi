@@ -3,3 +3,6 @@ bin
 *.xml
 .vscode
 *.pyc
+test_data
+test_store
+test_data.index

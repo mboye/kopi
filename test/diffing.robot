@@ -34,8 +34,8 @@ Identical indices
 
 Timestamp changed
     Create index from "test/resources/diff" and save it to "${index a}"
-    Sleep  2s
-    Run and return RC  touch test/resources/diff/file-a.txt
+    Sleep   2s
+    Touch   test/resources/diff/file-a.txt
     Create index from "test/resources/diff" and save it to "${index_b}"
 
     ${lines}   Diff indices ${index a} and ${index b}
@@ -64,6 +64,8 @@ Diff indices ${path a} and ${path b}
 Create index from "${path}" and save it to "${output path}"
     ${rc}=  Run and return RC  ${indexer bin} ${path} > ${output path} 2>/dev/null
     Should be equal as integers  ${rc}  0
+    ${index}=    Get file  ${output path}
+    Log many    ${index}
 
 End of test
     Remove file  ${index a}

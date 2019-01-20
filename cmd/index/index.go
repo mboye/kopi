@@ -13,7 +13,9 @@ import (
 
 func main() {
 	recursive := true
+
 	flag.BoolVar(&recursive, "recursive", true, "Index path recursively")
+	initIndex := flag.Bool("init", false, "Initial index. Mark all files as modified.")
 	flag.Parse()
 
 	rootPath := flag.Arg(0)
@@ -51,6 +53,10 @@ func main() {
 			Size:         size,
 			Mode:         info.Mode(),
 			ModifiedTime: info.ModTime().UTC()}
+
+		if *initIndex {
+			file.Modified = true
+		}
 
 		if err := encoder.Encode(file); err != nil {
 			log.Errorf("Failed to encode file: %s", path)
