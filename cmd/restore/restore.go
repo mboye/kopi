@@ -22,38 +22,131 @@ var encoder = json.NewEncoder(os.Stdout)
 
 func main() {
 	util.SetLogLevel()
-	maxBlockSize := flag.Int64("maxBlockSize", 1024*1024*10, "Split files into blocks of this size")
 	flag.Usage = printUsage
 	flag.Parse()
 
-	if flag.NArg() != 1 {
+	if flag.NArg() != 2 {
 		log.Error("Path argument missing")
 		printUsage()
 		os.Exit(1)
 	}
 
-	outputDir := flag.Arg(0)
+	inputDir := flag.Arg(0)
+	outputDir := flag.Arg(1)
 	log.WithField("destination", outputDir).Info("Beginning to store files")
 
-	filterAndStoreFile := func(file *model.File) error {
+	restoreFile := func(file *model.File) (err error) {
 		if file.Mode.IsDir() {
-			file.Modified = false
-			encoder.Encode(file)
-			return nil
+			return restoreDir(file, outputDir)
+		} else {
+			return restoreFile(file, inputDir, outputDir)
 		}
-
-		if !file.Modified {
-			log.WithField("path", file.Path).Debug("Skipping unmodified file")
-			return nil
-		}
-
-		file.Modified = false
-		return storeFile(file, outputDir, *maxBlockSize)
 	}
 
-	if err := forEachFileOnStdin(filterAndStoreFile); err != nil {
+	if err := forEachFileOnStdin(restoreFile); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func restoreDir(file *model.File, outputDir string) error {
+	outputPath := fmt.Sprintf("%s/%s", outputDir, file.Path)
+	log.WithFields(log.Fields{
+		"path": outputPath,
+		"mode": file.Mode}).Debug("restoring directory")
+	return os.MkdirAll(outputPath, file.Mode)
+}
+
+func restoreFile(file *model.File, inputDir, outputDir string) error {
+	log.WithFields(log.Fields{
+		"path": file.Path,
+		"mode": file.Mode}).Debug("restoring file")
+
+	if file.Blocks == nil || len(file.Blocks) == 0 {
+		return errors.New("cannot restore file without blocks")
+	}
+
+	outputPath := fmt.Sprintf("%s/%s", outputDir, file.Path)
+	parentDir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(parentDir, 0755); err != nil {
+		log.WithError(err).Error("failed to create parent directory of file")
+		return err
+	}
+
+	outputFile, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, file.Mode)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+
+	progress := 0
+	for _, block := range file.Blocks {
+		progress++
+		log.WithFields(
+			log.Fields{
+				"progress":     progress,
+				"max_progress": len(file.Blocks)}).Info("restoring block")
+
+		restoreBlock := func() error {
+			blockPath := fmt.Sprintf("%s/%s/%s.block", inputDir, block.Hash[:2], block.Hash)
+			blockFile, err := os.Open(blockPath)
+			if err != nil {
+				log.WithError(err).Error("failed to open block file")
+				return err
+			}
+			defer blockFile.Close()
+
+			blockReader := io.LimitReader(blockFile, block.Size)
+			blockData, err := ioutil.ReadAll(blockReader)
+			if err != nil {
+				log.WithError(err).Error("failed to read block data")
+				return err
+			}
+			blockSize := len(blockData)
+
+			if blockSize != int(block.Size) {
+				log.WithFields(
+					log.Fields{
+						"actual_size":   blockSize,
+						"expected_size": block.Size,
+						"block_path":    blockPath}).Error("corrupt block detected")
+
+				return fmt.Errorf("corrupt block: %s", blockPath)
+			}
+
+			hasher := md5.New()
+			_, err = hasher.Write(blockData)
+			if err != nil {
+				return err
+			}
+			hash := fmt.Sprintf("%x", hasher.Sum(nil))
+
+			if hash != block.Hash {
+				log.WithFields(
+					log.Fields{
+						"actual_hash":   hash,
+						"expected_hash": block.Hash}).Error("corrupt block detected")
+
+				return fmt.Errorf("corrupt block: %s", blockPath)
+			}
+
+			if _, err = outputFile.Write(blockData); err != nil {
+				log.WithError(err).Error("failed to restore block")
+				return err
+			}
+
+			return nil
+		}
+
+		if err := restoreBlock(); err != nil {
+			return err
+		}
+	}
+
+	log.WithFields(
+		log.Fields{
+			"path":          file.Path,
+			"restored_path": outputPath}).Info("file restored")
+	return nil
 }
 
 func storeFile(file *model.File, outputDir string, maxBlockSize int64) error {
@@ -77,8 +170,13 @@ func storeFile(file *model.File, outputDir string, maxBlockSize int64) error {
 			blockOffset := fileOffset
 
 			hasher := md5.New()
-			blockData, err := ioutil.ReadAll(blockReader)
-			bytesRead := len(blockData)
+			blockBuffer := make([]byte, maxBlockSize)
+
+			bytesRead, err := blockReader.Read(blockBuffer)
+			if err != nil {
+				return err
+			}
+
 			logger.WithField("bytes_read", bytesRead).Debug("Read file")
 
 			fileOffset += int64(bytesRead)
@@ -88,7 +186,7 @@ func storeFile(file *model.File, outputDir string, maxBlockSize int64) error {
 			}
 
 			blockSize := bytesRead
-			hasher.Write(blockData[:blockSize])
+			hasher.Write(blockBuffer[:blockSize])
 			hash := fmt.Sprintf("%x", hasher.Sum(nil))
 			block := model.Block{Hash: hash, Offset: blockOffset, Size: int64(blockSize)}
 
@@ -112,7 +210,7 @@ func storeFile(file *model.File, outputDir string, maxBlockSize int64) error {
 			}
 			logger.WithField("output_path", outputPath).Debug("Created output file")
 
-			bytesWritten, err := outputFile.Write(blockData[:blockSize])
+			bytesWritten, err := outputFile.Write(blockBuffer[:blockSize])
 			if err != nil {
 				outputFile.Close()
 				return err
@@ -182,7 +280,7 @@ func forEachFileOnStdin(handler fileHandlerFunc) error {
 
 func printUsage() {
 	commandName := filepath.Base(os.Args[0])
-	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] <destination dir>\n\n", commandName)
+	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] <store dir> <destination dir>\n\n", commandName)
 	fmt.Fprintf(os.Stderr, "Pass index lines on STDIN.\n")
 	fmt.Fprintln(os.Stderr, "\nOptions:")
 	flag.PrintDefaults()

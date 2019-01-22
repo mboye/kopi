@@ -1,5 +1,6 @@
 import re
 import json
+import hashlib
 
 
 def should_be_valid_index_line(line, path, size, modified=None):
@@ -46,21 +47,27 @@ def should_be_valid_index_line(line, path, size, modified=None):
             'Value key "modified" must always be true if key is present'
         )
 
+
 def should_be_index_line_with_blocks(line, blocks):
     doc = json.loads(line)
 
     if not "blocks" in doc:
-        raise AssertionError('Index line missing key: blocks')
+        raise AssertionError("Index line missing key: blocks")
 
-    if len(blocks) != len(doc['blocks']):
-        raise AssertionError('Expected index line to contain {} blocks, but found {} blocks.'.format(len(blocks), len(doc['blocks'])))
+    if len(blocks) != len(doc["blocks"]):
+        raise AssertionError(
+            "Expected index line to contain {} blocks, but found {} blocks.".format(
+                len(blocks), len(doc["blocks"])
+            )
+        )
 
     for block in blocks:
-        block['size'] = int(block['size'])
-        block['offset'] = int(block['offset'])
+        block["size"] = int(block["size"])
+        block["offset"] = int(block["offset"])
 
-        if not block in doc['blocks']:
-            raise AssertionError('Block not found in index line: ' + json.dumps(block))
+        if not block in doc["blocks"]:
+            raise AssertionError("Block not found in index line: " + json.dumps(block))
+
 
 def should_be_index_line_with_block_count(line, num_blocks):
     num_blocks = int(num_blocks)
@@ -68,22 +75,38 @@ def should_be_index_line_with_block_count(line, num_blocks):
 
     if num_blocks == 0:
         if "blocks" in doc:
-            raise AssertionError('Index line without blocks should not have key "blocks"')
+            raise AssertionError(
+                'Index line without blocks should not have key "blocks"'
+            )
         else:
             return
 
-    if not 'blocks' in doc:
-        raise AssertionError('Index line missing key: blocks')
+    if not "blocks" in doc:
+        raise AssertionError("Index line missing key: blocks")
 
-    num_actual_blocks = len(doc['blocks'])
+    num_actual_blocks = len(doc["blocks"])
     if num_blocks != num_actual_blocks:
-        raise AssertionError('Expected {} blocks, but found {} blocks'.format(num_blocks, num_actual_blocks))
-
-
+        raise AssertionError(
+            "Expected {} blocks, but found {} blocks".format(
+                num_blocks, num_actual_blocks
+            )
+        )
 
     if not "blocks" in doc:
-        raise AssertionError('Index line missing key: blocks')
+        raise AssertionError("Index line missing key: blocks")
 
+
+def file_should_have_md5_hash(path, expected_hash):
+    hasher = hashlib.md5()
+    with open(path, "rb") as fp:
+        for chunk in iter(lambda: fp.read(4096), b""):
+            hasher.update(chunk)
+    actual_hash = hasher.hexdigest().lower()
+
+    if actual_hash != expected_hash:
+        raise AssertionError(
+            "Expected md5 hash {}, but got {}".format(expected_hash, actual_hash)
+        )
 
 
 class KopiFile(object):

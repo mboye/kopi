@@ -22,7 +22,7 @@ ${index}                ${TEMPDIR}/index
 ${max block size}       64
 
 ** Test Cases **
-File smaller than block size
+File of same size as block size
     Create index from "${small file}" and save it to "${index}"
     ${index data}       Get file        ${index}
     ${index lines}      Split to lines  ${index data}
@@ -123,5 +123,4 @@ Begin test
     Create directory        ${store dir}
 
 End test
-    No operation
     Remove directory  ${store dir}  recursive=True

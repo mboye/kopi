@@ -4,4 +4,5 @@ set -x
 robot \
     test/indexing.robot \
     test/diffing.robot \
-    test/store.robot
+    test/store.robot \
+    test/restore.robot
