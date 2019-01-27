@@ -4,6 +4,17 @@ ${indexer bin}          bin/kopi-index
 ${store bin}            bin/kopi-store
 ${restore bin}          bin/kopi-restore
 
+${store dir}            ${TEMPDIR}/simple_store_data
+${index}                ${TEMPDIR}/index
+${max block size}       64
+
+${small file}           test/resources/store/small-file.txt
+${large file}           test/resources/store/large-file.txt
+${small file hash}      05a5b8a8b0280cf985e8de1f0cc1a980
+${large file hash}      57e673156276e884bcb0207ee22e5a84
+${large file hash 1}    ${small file hash}
+${large file hash 2}    e44f0589587d1377cb68cf3166eb611e
+
 ** Keywords **
 Create index from "${path}" and return lines
     ${result}=  Run process  ${indexer bin} --init\=true ${path}  shell=True

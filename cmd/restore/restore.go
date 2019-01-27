@@ -16,6 +16,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	SaltLength = 128 // Bytes
+)
+
 type fileHandlerFunc func(file *model.File) error
 
 var encoder = json.NewEncoder(os.Stdout)
@@ -38,13 +42,27 @@ func main() {
 
 	inputDir := flag.Arg(0)
 	outputDir := flag.Arg(1)
+
+	saltPath := fmt.Sprintf("%s/salt", inputDir)
+	salt := make([]byte, 128)
+	if saltFile, err := os.Open(saltPath); err != nil {
+		log.WithField("error", err).Fatal("failed to open salt file")
+	} else {
+		bytesRead, err := saltFile.Read(salt)
+		if err != nil {
+			log.WithField("error", err).Fatal("failed to read salt")
+		} else if bytesRead != SaltLength {
+			log.WithField("error", err).Fatal("incomplete salt read")
+		}
+	}
+
 	log.WithField("destination", outputDir).Info("Beginning to store files")
 
 	restoreFile := func(file *model.File) (err error) {
 		if file.Mode.IsDir() {
 			return restoreDir(file, outputDir, *dryRun)
 		} else {
-			return restoreFile(file, inputDir, outputDir, *dryRun)
+			return restoreFile(file, inputDir, outputDir, salt, *dryRun)
 		}
 	}
 
@@ -65,7 +83,7 @@ func restoreDir(file *model.File, outputDir string, dryRun bool) error {
 	return os.MkdirAll(outputPath, file.Mode)
 }
 
-func restoreFile(file *model.File, inputDir, outputDir string, dryRun bool) error {
+func restoreFile(file *model.File, inputDir, outputDir string, salt []byte, dryRun bool) error {
 	log.WithFields(log.Fields{
 		"path": file.Path,
 		"mode": file.Mode}).Debug("restoring file")
@@ -128,8 +146,10 @@ func restoreFile(file *model.File, inputDir, outputDir string, dryRun bool) erro
 			}
 
 			hasher := md5.New()
-			_, err = hasher.Write(blockData)
-			if err != nil {
+			if _, err = hasher.Write(salt); err != nil {
+				return err
+			}
+			if _, err = hasher.Write(blockData); err != nil {
 				return err
 			}
 			hash := fmt.Sprintf("%x", hasher.Sum(nil))
@@ -162,6 +182,7 @@ func restoreFile(file *model.File, inputDir, outputDir string, dryRun bool) erro
 		log.Fields{
 			"path":          file.Path,
 			"restored_path": outputPath}).Info("file restored")
+
 	return nil
 }
 

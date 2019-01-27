@@ -9,16 +9,6 @@ Resource    common.robot
 Test Setup     Begin test
 Test Teardown  End test
 
-** Variables **
-${small file}           test/resources/store/small-file.txt
-${small file hash}      144062aa1d1186d6ef1c122d645b567a
-${large file}           test/resources/store/large-file.txt
-${large file hash 1}    ${small file hash}
-${large file hash 2}    074e8e431cc1335d6a44f366adf0eb11
-${store dir}            ${TEMPDIR}/simple_store_data
-${index}                ${TEMPDIR}/index
-${max block size}       64
-
 ** Test Cases **
 File of same size as block size
     Create index from "${small file}" and save it to "${index}"
@@ -107,6 +97,7 @@ Files reuse existing blocks
 ** Keywords **
 Begin test
     Create directory        ${store dir}
+    Copy file               test/resources/salt  ${store dir}/salt
 
 End test
     Remove directory  ${store dir}  recursive=True

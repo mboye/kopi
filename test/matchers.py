@@ -2,6 +2,9 @@ import re
 import json
 import hashlib
 
+ROBOT_LIBRARY_SCOPE = 'TEST CASE'
+salt = open('test/resources/salt','rb').read()
+
 
 def should_be_valid_index_line(line, path, size, modified=None):
     doc = json.loads(line)
@@ -97,7 +100,12 @@ def should_be_index_line_with_block_count(line, num_blocks):
 
 
 def file_should_have_md5_hash(path, expected_hash):
+    if salt == '':
+        raise RuntimeError('Salt has not been loaded')
+
     hasher = hashlib.md5()
+    hasher.update(salt)
+
     with open(path, "rb") as fp:
         for chunk in iter(lambda: fp.read(4096), b""):
             hasher.update(chunk)

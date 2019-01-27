@@ -10,18 +10,9 @@ Test Setup     Begin test
 Test Teardown  End test
 
 ** Variables **
-${small file}           test/resources/restore/small-file.txt
-${small file hash}      144062aa1d1186d6ef1c122d645b567a
-${large file}           test/resources/restore/large-file.txt
-${large file hash 1}    ${small file hash}
-${large file hash 2}    074e8e431cc1335d6a44f366adf0eb11
-${large file hash}      2f0f639c17a26a374e5063bcd46f5146
-${source dir}           test/resources/restore
-${store dir}            ${TEMPDIR}/simple_store_data
+${source dir}           test/resources/store
 ${restore dir}          ${TEMPDIR}/restored_data
-${index}                ${TEMPDIR}/index
 ${stored index}         ${TEMPDIR}/index.stored
-${max block size}       64
 
 ** Test Cases **
 File of same size as block size
@@ -94,8 +85,9 @@ Dry run with block corruption
 Begin test
     Create directory        ${store dir}
     Create directory        ${restore dir}
+    Copy file               test/resources/salt  ${store dir}/salt
 
 End test
-    Remove directory  ${store dir}  recursive=True
-    Remove directory  ${restore dir}  recursive=True
+    Remove directory  ${store dir}      recursive=True
+    Remove directory  ${restore dir}    recursive=True
     Remove file       ${stored index}

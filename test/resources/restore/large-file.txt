@@ -1,2 +1,0 @@
-This sentence is exactly 64 bytes long and is great for testing
-This line is precisely 48 bytes long and great!
