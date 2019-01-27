@@ -22,6 +22,7 @@ var encoder = json.NewEncoder(os.Stdout)
 
 func main() {
 	util.SetLogLevel()
+	dryRun := flag.Bool("dry-run", false, "Dry run. Only verify that index is restorable.")
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -31,15 +32,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *dryRun {
+		log.Info("Dry run mode enabled")
+	}
+
 	inputDir := flag.Arg(0)
 	outputDir := flag.Arg(1)
 	log.WithField("destination", outputDir).Info("Beginning to store files")
 
 	restoreFile := func(file *model.File) (err error) {
 		if file.Mode.IsDir() {
-			return restoreDir(file, outputDir)
+			return restoreDir(file, outputDir, *dryRun)
 		} else {
-			return restoreFile(file, inputDir, outputDir)
+			return restoreFile(file, inputDir, outputDir, *dryRun)
 		}
 	}
 
@@ -48,15 +53,19 @@ func main() {
 	}
 }
 
-func restoreDir(file *model.File, outputDir string) error {
+func restoreDir(file *model.File, outputDir string, dryRun bool) error {
 	outputPath := fmt.Sprintf("%s/%s", outputDir, file.Path)
 	log.WithFields(log.Fields{
 		"path": outputPath,
 		"mode": file.Mode}).Debug("restoring directory")
+
+	if dryRun {
+		return nil
+	}
 	return os.MkdirAll(outputPath, file.Mode)
 }
 
-func restoreFile(file *model.File, inputDir, outputDir string) error {
+func restoreFile(file *model.File, inputDir, outputDir string, dryRun bool) error {
 	log.WithFields(log.Fields{
 		"path": file.Path,
 		"mode": file.Mode}).Debug("restoring file")
@@ -66,17 +75,22 @@ func restoreFile(file *model.File, inputDir, outputDir string) error {
 	}
 
 	outputPath := fmt.Sprintf("%s/%s", outputDir, file.Path)
-	parentDir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(parentDir, 0755); err != nil {
-		log.WithError(err).Error("failed to create parent directory of file")
-		return err
-	}
 
-	outputFile, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, file.Mode)
-	if err != nil {
-		return err
+	var outputFile *os.File
+	if !dryRun {
+		parentDir := filepath.Dir(outputPath)
+		if err := os.MkdirAll(parentDir, 0755); err != nil {
+			log.WithError(err).Error("failed to create parent directory of file")
+			return err
+		}
+
+		var err error
+		outputFile, err = os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, file.Mode)
+		if err != nil {
+			return err
+		}
+		defer outputFile.Close()
 	}
-	defer outputFile.Close()
 
 	progress := 0
 	for _, block := range file.Blocks {
@@ -129,9 +143,11 @@ func restoreFile(file *model.File, inputDir, outputDir string) error {
 				return fmt.Errorf("corrupt block: %s", blockPath)
 			}
 
-			if _, err = outputFile.Write(blockData); err != nil {
-				log.WithError(err).Error("failed to restore block")
-				return err
+			if !dryRun {
+				if _, err = outputFile.Write(blockData); err != nil {
+					log.WithError(err).Error("failed to restore block")
+					return err
+				}
 			}
 
 			return nil

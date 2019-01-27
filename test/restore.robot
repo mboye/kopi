@@ -58,23 +58,64 @@ Files reuse existing blocks
     File should exist           ${restore dir}/${large file}
     File should have md5 hash   ${restore dir}/${large file}  ${large file hash}
 
+
+Dry run
+    Create index from "${source dir}" and save it to "${index}"
+
+    Store index "${index}" to "${store dir}" and save output to "${stored index}"
+    Restore index dry run "${stored index}" from "${store dir}" to "${restore dir}"
+
+    Run keyword and expect error  *
+    ...     File should exist     ${restore dir}/${small file}
+
+    Run keyword and expect error  *
+    ...     File should exist     ${restore dir}/${large file}
+
+Dry run with missing block
+    Create index from "${source dir}" and save it to "${index}"
+
+    Store index "${index}" to "${store dir}" and save output to "${stored index}"
+
+    ${block dir}=       Get substring  ${small file hash}  0  2
+    Remove file         ${store dir}/${block dir}/${small file hash}.block
+
+    Run keyword and expect error    *failed to open bloc*
+    ...     Restore index dry run "${stored index}" from "${store dir}" to "${restore dir}"
+
+Dry run with block corruption
+    Create index from "${source dir}" and save it to "${index}"
+
+    Store index "${index}" to "${store dir}" and save output to "${stored index}"
+
+    ${block dir}=       Get substring  ${small file hash}  0  2
+    Create file      ${store dir}/${block dir}/${small file hash}.block   extra-data
+
+    Run keyword and expect error    *corrupt block detected*
+    ...     Restore index dry run "${stored index}" from "${store dir}" to "${restore dir}"
+
 ** Keywords **
 Create index from "${path}" and save it to "${output path}"
     ${rc}=  Run and return RC  ${indexer bin} --init=true ${path} > ${output path} 2>/dev/null
     Should be equal as integers  ${rc}  0
 
 Store index "${index}" to "${store dir}" and save output to "${output path}"
-    ${rc}  ${stdout}=  Run and return RC and output  ${store bin} --maxBlockSize ${max block size} ${store dir} < ${index} > ${output path} 2>/dev/null
-    Should be equal as integers  ${rc}  0
-    Log many  ${stdout}
+    ${result}=          Run process  ${store bin} --maxBlockSize ${max block size} ${store dir} < ${index} | tee ${output path}  shell=True
+    Log many  ${result.stderr}
+    Log many  ${result.stdout}
+    Should be equal as integers  ${result.rc}  0
 
-    ${lines}=   Split to lines  ${stdout}
+    ${lines}=   Split to lines  ${result.stdout}
     [Return]   ${lines}
 
 Restore index "${index}" from "${store dir}" to "${restore dir}"
     ${rc}  ${stdout}=  Run and return RC and output  ${restore bin} ${store dir} ${restore dir} < ${index} 2>&1
     Log many  ${stdout}
-    Should be equal as integers  ${rc}  0
+    Should be equal as integers  ${rc}  0  ${stdout}
+
+Restore index dry run "${index}" from "${store dir}" to "${restore dir}"
+    ${rc}  ${stdout}=  Run and return RC and output  ${restore bin} -dry-run ${store dir} ${restore dir} < ${index} 2>&1
+    Log many  ${stdout}
+    Should be equal as integers  ${rc}  0  ${stdout}
 
 Begin test
     Create directory        ${store dir}
