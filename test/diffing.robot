@@ -4,12 +4,12 @@ Library     Process
 Library     String
 Library     Collections
 Library     matchers.py
+Resource    common.robot
 
 Test Teardown  End of test
 
 ** Variables **
 ${differ bin}   bin/kopi-diff
-${indexer bin}  bin/kopi-index
 ${index a}      ${TEMPDIR}/index.a
 ${index b}      ${TEMPDIR}/index.b
 
@@ -48,24 +48,20 @@ Timestamp changed
     Should be valid index line  ${line}  path=test/resources/diff   size=0
 
 Missing indices
-    Run keyword and expect error  1 != 0
+    Run keyword and expect error  *failed to open index*
     ...  Diff indices ${index a} and /missing/index
 
-    Run keyword and expect error  1 != 0
+    Run keyword and expect error  *failed to open index*
     ...  Diff indices /missing/index and ${index a}
 
 ** Keywords **
 Diff indices ${path a} and ${path b}
-    ${result}=  Run process  ${differ bin}  ${path a}  ${path b}
-    Should be equal as integers  ${result.rc}  0
+    ${result}=  Run process  ${differ bin} ${path a} ${path b}  shell=True
+    Log many    ${result.stdout}
+    Log many    ${result.stderr}
+    Should be equal as integers  ${result.rc}  0  ${result.stderr}
     ${lines}=   Split to lines  ${result.stdout}
     [Return]   ${lines}
-
-Create index from "${path}" and save it to "${output path}"
-    ${rc}=  Run and return RC  ${indexer bin} ${path} > ${output path} 2>/dev/null
-    Should be equal as integers  ${rc}  0
-    ${index}=    Get file  ${output path}
-    Log many    ${index}
 
 End of test
     Remove file  ${index a}

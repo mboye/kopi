@@ -4,14 +4,12 @@ Library     Process
 Library     String
 Library     Collections
 Library     matchers.py
+Resource    common.robot
 
 Test Setup     Begin test
 Test Teardown  End test
 
 ** Variables **
-${differ bin}           bin/kopi-diff
-${indexer bin}          bin/kopi-index
-${store bin}            bin/kopi-store
 ${small file}           test/resources/store/small-file.txt
 ${small file hash}      144062aa1d1186d6ef1c122d645b567a
 ${large file}           test/resources/store/large-file.txt
@@ -28,7 +26,7 @@ File of same size as block size
     ${index lines}      Split to lines  ${index data}
     Length should be    ${index lines}  1
 
-    ${lines}=               Store index "${index}"
+    ${lines}=               Store index "${index}" to "${store dir}" and return lines
     Length should be        ${lines}  1
     ${line}                 Get from list  ${lines}  0
 
@@ -47,7 +45,7 @@ File larger than block size
     ${index lines}      Split to lines  ${index data}
     Length should be    ${index lines}  1
 
-    ${lines}=               Store index "${index}"
+    ${lines}=               Store index "${index}" to "${store dir}" and return lines
     Length should be        ${lines}  1
     ${line}                 Get from list  ${lines}  0
 
@@ -71,7 +69,7 @@ Files reuse existing blocks
     ${index lines}      Split to lines  ${index data}
     Length should be    ${index lines}  1
 
-    ${lines}=               Store index "${index}"
+    ${lines}=               Store index "${index}" to "${store dir}" and return lines
     Length should be        ${lines}  1
     ${line}                 Get from list  ${lines}  0
 
@@ -89,7 +87,7 @@ Files reuse existing blocks
     ${index lines}      Split to lines  ${index data}
     Length should be    ${index lines}  1
 
-    ${lines}=               Store index "${index}"
+    ${lines}=               Store index "${index}" to "${store dir}" and return lines
     Length should be        ${lines}  1
     ${line}                 Get from list  ${lines}  0
 
@@ -107,18 +105,6 @@ Files reuse existing blocks
     File should exist   ${store dir}/${block dir}/${large file hash 2}.block
 
 ** Keywords **
-Create index from "${path}" and save it to "${output path}"
-    ${rc}=  Run and return RC  ${indexer bin} --init=true ${path} > ${output path} 2>/dev/null
-    Should be equal as integers  ${rc}  0
-
-Store index "${index}"
-    ${rc}  ${stdout}=  Run and return RC and output  ${store bin} --maxBlockSize ${max block size} ${store dir} < ${index} 2>/dev/null
-    Should be equal as integers  ${rc}  0
-    Log many  ${stdout}
-
-    ${lines}=   Split to lines  ${stdout}
-    [Return]   ${lines}
-
 Begin test
     Create directory        ${store dir}
 

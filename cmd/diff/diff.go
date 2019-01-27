@@ -48,7 +48,7 @@ func loadIndex(path string) (index.Index, error) {
 	log.Debugf("Loading index: %s", path)
 	inputFile, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to open index: %s", err.Error())
+		return nil, fmt.Errorf("failed to open index: %s", err.Error())
 	}
 	decoder := json.NewDecoder(inputFile)
 
@@ -56,7 +56,7 @@ func loadIndex(path string) (index.Index, error) {
 	for decoder.More() {
 		file := &model.File{}
 		if err = decoder.Decode(file); err != nil {
-			return nil, fmt.Errorf("Failed to decode file: %s", err.Error())
+			return nil, fmt.Errorf("failed to decode file: %s", err.Error())
 		}
 
 		if err := index.Add(file); err != nil {

@@ -4,15 +4,12 @@ Library     Process
 Library     String
 Library     Collections
 Library     matchers.py
+Resource    common.robot
 
 Test Setup     Begin test
 Test Teardown  End test
 
 ** Variables **
-${differ bin}           bin/kopi-diff
-${indexer bin}          bin/kopi-index
-${store bin}            bin/kopi-store
-${restore bin}          bin/kopi-restore
 ${small file}           test/resources/restore/small-file.txt
 ${small file hash}      144062aa1d1186d6ef1c122d645b567a
 ${large file}           test/resources/restore/large-file.txt
@@ -94,29 +91,6 @@ Dry run with block corruption
     ...     Restore index dry run "${stored index}" from "${store dir}" to "${restore dir}"
 
 ** Keywords **
-Create index from "${path}" and save it to "${output path}"
-    ${rc}=  Run and return RC  ${indexer bin} --init=true ${path} > ${output path} 2>/dev/null
-    Should be equal as integers  ${rc}  0
-
-Store index "${index}" to "${store dir}" and save output to "${output path}"
-    ${result}=          Run process  ${store bin} --maxBlockSize ${max block size} ${store dir} < ${index} | tee ${output path}  shell=True
-    Log many  ${result.stderr}
-    Log many  ${result.stdout}
-    Should be equal as integers  ${result.rc}  0
-
-    ${lines}=   Split to lines  ${result.stdout}
-    [Return]   ${lines}
-
-Restore index "${index}" from "${store dir}" to "${restore dir}"
-    ${rc}  ${stdout}=  Run and return RC and output  ${restore bin} ${store dir} ${restore dir} < ${index} 2>&1
-    Log many  ${stdout}
-    Should be equal as integers  ${rc}  0  ${stdout}
-
-Restore index dry run "${index}" from "${store dir}" to "${restore dir}"
-    ${rc}  ${stdout}=  Run and return RC and output  ${restore bin} -dry-run ${store dir} ${restore dir} < ${index} 2>&1
-    Log many  ${stdout}
-    Should be equal as integers  ${rc}  0  ${stdout}
-
 Begin test
     Create directory        ${store dir}
     Create directory        ${restore dir}

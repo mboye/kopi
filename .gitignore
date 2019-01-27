@@ -7,3 +7,4 @@ test_data
 test_store
 test_data.index
 .mypy_cache
+debug.log
