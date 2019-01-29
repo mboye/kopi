@@ -10,10 +10,10 @@ ${max block size}       64
 
 ${small file}           test/resources/store/small-file.txt
 ${large file}           test/resources/store/large-file.txt
-${small file hash}      05a5b8a8b0280cf985e8de1f0cc1a980
-${large file hash}      57e673156276e884bcb0207ee22e5a84
+${small file hash}      a2e94dfda3eb76fdb96649cea308ec07dde3243c
+${large file hash}      aa2695f48e73a2e338dd20a6a501a8ad2d39c757
 ${large file hash 1}    ${small file hash}
-${large file hash 2}    e44f0589587d1377cb68cf3166eb611e
+${large file hash 2}    94794e6c56dca74fd44cc77e693523233c6022af
 
 ** Keywords **
 Create index from "${path}" and return lines

@@ -21,7 +21,7 @@ File of same size as block size
     Restore index "${stored index}" from "${store dir}" to "${restore dir}"
 
     File should exist           ${restore dir}/${small file}
-    File should have md5 hash   ${restore dir}/${small file}  ${small file hash}
+    File should have SHA1 hash   ${restore dir}/${small file}  ${small file hash}
 
 File larger than block size
     Create index from "${large file}" and save it to "${index}"
@@ -29,7 +29,7 @@ File larger than block size
     Restore index "${stored index}" from "${store dir}" to "${restore dir}"
 
     File should exist           ${restore dir}/${large file}
-    File should have md5 hash   ${restore dir}/${large file}  ${large file hash}
+    File should have SHA1 hash   ${restore dir}/${large file}  ${large file hash}
 
 Files reuse existing blocks
     Create index from "${source dir}" and save it to "${index}"
@@ -41,10 +41,10 @@ Files reuse existing blocks
     Restore index "${stored index}" from "${store dir}" to "${restore dir}"
 
     File should exist           ${restore dir}/${small file}
-    File should have md5 hash   ${restore dir}/${small file}  ${small file hash}
+    File should have SHA1 hash   ${restore dir}/${small file}  ${small file hash}
 
     File should exist           ${restore dir}/${large file}
-    File should have md5 hash   ${restore dir}/${large file}  ${large file hash}
+    File should have SHA1 hash   ${restore dir}/${large file}  ${large file hash}
 
 
 Dry run

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"crypto/md5"
 	"crypto/rand"
+	"crypto/sha1"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -106,7 +106,7 @@ func storeFile(file *model.File, outputDir string, salt []byte, maxBlockSize int
 			blockReader := io.LimitReader(fileReader, maxBlockSize)
 			blockOffset := fileOffset
 
-			hasher := md5.New()
+			hasher := sha1.New()
 			hasher.Write(salt)
 			blockData, err := ioutil.ReadAll(blockReader)
 			bytesRead := len(blockData)

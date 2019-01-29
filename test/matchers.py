@@ -99,11 +99,11 @@ def should_be_index_line_with_block_count(line, num_blocks):
         raise AssertionError("Index line missing key: blocks")
 
 
-def file_should_have_md5_hash(path, expected_hash):
+def file_should_have_sha1_hash(path, expected_hash):
     if salt == '':
         raise RuntimeError('Salt has not been loaded')
 
-    hasher = hashlib.md5()
+    hasher = hashlib.sha1()
     hasher.update(salt)
 
     with open(path, "rb") as fp:
@@ -113,7 +113,7 @@ def file_should_have_md5_hash(path, expected_hash):
 
     if actual_hash != expected_hash:
         raise AssertionError(
-            "Expected md5 hash {}, but got {}".format(expected_hash, actual_hash)
+            "Expected SHA1 hash {}, but got {}".format(expected_hash, actual_hash)
         )
 
 

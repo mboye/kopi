@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/md5"
+	"crypto/sha1"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -145,7 +145,7 @@ func restoreFile(file *model.File, inputDir, outputDir string, salt []byte, dryR
 				return fmt.Errorf("corrupt block: %s", blockPath)
 			}
 
-			hasher := md5.New()
+			hasher := sha1.New()
 			if _, err = hasher.Write(salt); err != nil {
 				return err
 			}
@@ -206,7 +206,7 @@ func storeFile(file *model.File, outputDir string, maxBlockSize int64) error {
 			blockReader := io.LimitReader(fileReader, maxBlockSize)
 			blockOffset := fileOffset
 
-			hasher := md5.New()
+			hasher := sha1.New()
 			blockBuffer := make([]byte, maxBlockSize)
 
 			bytesRead, err := blockReader.Read(blockBuffer)
