@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
-	"crypto/sha1"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -13,12 +11,9 @@ import (
 	"path/filepath"
 
 	"github.com/mboye/kopi/model"
+	"github.com/mboye/kopi/security"
 	"github.com/mboye/kopi/util"
 	log "github.com/sirupsen/logrus"
-)
-
-const (
-	SaltLength = 128 // Bytes
 )
 
 type fileHandlerFunc func(file *model.File) error
@@ -28,6 +23,7 @@ var encoder = json.NewEncoder(os.Stdout)
 func main() {
 	util.SetLogLevel()
 	maxBlockSize := flag.Int64("maxBlockSize", 1024*1024*10, "Split files into blocks of this size")
+	encrypt := flag.Bool("encrypt", false, "Encrypt stored blocks using AES-256")
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -38,31 +34,10 @@ func main() {
 	}
 
 	outputDir := flag.Arg(0)
-	log.WithField("destination", outputDir).Info("Beginning to store files")
 
-	saltPath := fmt.Sprintf("%s/salt", outputDir)
-	salt := make([]byte, 128)
-	if saltFile, err := os.Open(saltPath); err == nil {
-		// Read existing salt
-		bytesRead, err := saltFile.Read(salt)
-		if err != nil {
-			log.WithField("error", err).Fatal("failed to read salt")
-		} else if bytesRead != SaltLength {
-			log.WithField("error", err).Fatal("incomplete salt read")
-		}
-	} else if os.IsNotExist(err) {
-		// Create salt
-		if bytesRead, err := rand.Read(salt); err != nil || bytesRead != SaltLength {
-			log.WithField("error", err).Fatal("failed to generate salt")
-		} else {
-			if err := ioutil.WriteFile(saltPath, salt, 0655); err != nil {
-				log.WithField("error", err).Fatal("failed to save salt")
-			}
-			log.Info("salt created")
-		}
-
-	} else {
-		log.WithField("error", err).Fatal("failed to open salt file")
+	securityContext, err := security.NewContext(outputDir, *encrypt)
+	if err != nil {
+		log.WithField("error", err).Fatal("failed create security context")
 	}
 
 	filterAndStoreFile := func(file *model.File) error {
@@ -78,15 +53,16 @@ func main() {
 		}
 
 		file.Modified = false
-		return storeFile(file, outputDir, salt, *maxBlockSize)
+		return storeFile(file, outputDir, securityContext, *maxBlockSize)
 	}
 
+	log.WithField("destination", outputDir).Info("Beginning to store files")
 	if err := forEachFileOnStdin(filterAndStoreFile); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func storeFile(file *model.File, outputDir string, salt []byte, maxBlockSize int64) error {
+func storeFile(file *model.File, outputDir string, securityContext *security.Context, maxBlockSize int64) error {
 	if err := refreshFileMetadata(file); err != nil {
 		log.Fatal(err)
 	}
@@ -106,8 +82,11 @@ func storeFile(file *model.File, outputDir string, salt []byte, maxBlockSize int
 			blockReader := io.LimitReader(fileReader, maxBlockSize)
 			blockOffset := fileOffset
 
-			hasher := sha1.New()
-			hasher.Write(salt)
+			hasher, err := securityContext.NewHasher()
+			if err != nil {
+				log.WithField("error", err).Fatal("failed to get hasher")
+			}
+
 			blockData, err := ioutil.ReadAll(blockReader)
 			bytesRead := len(blockData)
 			logger.WithField("bytes_read", bytesRead).Debug("Read file")
