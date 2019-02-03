@@ -10,13 +10,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mboye/kopi/input"
 	"github.com/mboye/kopi/model"
 	"github.com/mboye/kopi/security"
 	"github.com/mboye/kopi/util"
 	log "github.com/sirupsen/logrus"
 )
-
-type fileHandlerFunc func(file *model.File) error
 
 var encoder = json.NewEncoder(os.Stdout)
 
@@ -24,6 +23,7 @@ func main() {
 	util.SetLogLevel()
 	maxBlockSize := flag.Int64("maxBlockSize", 1024*1024*10, "Split files into blocks of this size")
 	encrypt := flag.Bool("encrypt", false, "Encrypt stored blocks using AES-256")
+	printProgress := flag.Bool("progress", false, "Print progress information to stderr")
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -57,7 +57,12 @@ func main() {
 	}
 
 	log.WithField("destination", outputDir).Info("Beginning to store files")
-	if err := forEachFileOnStdin(filterAndStoreFile); err != nil {
+	if *printProgress {
+		err = input.ProcessFilesWithProgress(filterAndStoreFile)
+	} else {
+		err = input.ProcessFiles(filterAndStoreFile)
+	}
+	if err != nil {
 		log.Fatal(err)
 	}
 }
@@ -175,23 +180,6 @@ func refreshFileMetadata(file *model.File) error {
 		file.Mode = fileInfo.Mode()
 	}
 
-	return nil
-}
-
-func forEachFileOnStdin(handler fileHandlerFunc) error {
-	decoder := json.NewDecoder(os.Stdin)
-
-	for decoder.More() {
-		file := &model.File{}
-		if err := decoder.Decode(file); err != nil {
-			return fmt.Errorf("Failed to decode file: %s", err.Error())
-		}
-
-		if err := handler(file); err != nil {
-			return err
-		}
-
-	}
 	return nil
 }
 

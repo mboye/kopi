@@ -107,6 +107,23 @@ Restore dry run with block corruption
     Run keyword and expect error    *corrupt block detected*
     ...     Restore index dry run "${stored index}" from "${store dir}" to "${restore dir}"
 
+Restore multiple files and print progress
+    Create index from "${backup source dir}" and save it to "${index}"
+    Store index "${index}" to "${store dir}" and save output to "${stored index}"
+
+    ${result}=  Run process  ${restore bin} --progress ${store dir} ${restore dir} < ${stored index}  shell=True
+    Log many    ${result.stdout}
+    Log many    ${result.stderr}
+    Should be equal as integers  ${result.rc}  0  ${result.stderr}
+
+    Should contain  ${result.stderr}  progress
+    Should contain  ${result.stderr}  elapsed_time
+    Should contain  ${result.stderr}  remaining_time
+    Should contain  ${result.stderr}  byte_progress
+    Should contain  ${result.stderr}  file_progress
+    Should contain  ${result.stderr}  errors
+    Should contain  ${result.stderr}  100.00%
+
 ** Keywords **
 Begin test
     Create directory        ${store dir}

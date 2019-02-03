@@ -8,6 +8,7 @@ ${store dir}            ${TEMPDIR}/simple_store_data
 ${index}                ${TEMPDIR}/index
 ${max block size}       64
 
+${backup source dir}    test/resources/store
 ${small file}           test/resources/store/small-file.txt
 ${large file}           test/resources/store/large-file.txt
 ${small file hash}      a2e94dfda3eb76fdb96649cea308ec07dde3243c

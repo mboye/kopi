@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mboye/kopi/input"
 	"github.com/mboye/kopi/security"
 
 	"github.com/mboye/kopi/model"
@@ -30,6 +31,7 @@ func main() {
 	util.SetLogLevel()
 	dryRun := flag.Bool("dry-run", false, "Dry run. Only verify that index is restorable.")
 	decrypt := flag.Bool("decrypt", false, "Decrypt blocks using AES-256 while restoring")
+	printProgress := flag.Bool("progress", false, "Print progress information to stderr")
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -61,7 +63,12 @@ func main() {
 		}
 	}
 
-	if err := forEachFileOnStdin(restoreFile); err != nil {
+	if *printProgress {
+		err = input.ProcessFilesWithProgress(restoreFile)
+	} else {
+		err = input.ProcessFiles(restoreFile)
+	}
+	if err != nil {
 		log.Fatal(err)
 	}
 }
@@ -111,7 +118,7 @@ func restoreFile(file *model.File, inputDir, outputDir string, securityContext *
 		log.WithFields(
 			log.Fields{
 				"progress":     progress,
-				"max_progress": len(file.Blocks)}).Info("restoring block")
+				"max_progress": len(file.Blocks)}).Debug("restoring block")
 
 		restoreBlock := func() error {
 			blockPath := fmt.Sprintf("%s/%s/%s.block", inputDir, block.Hash[:2], block.Hash)
@@ -181,7 +188,7 @@ func restoreFile(file *model.File, inputDir, outputDir string, securityContext *
 	log.WithFields(
 		log.Fields{
 			"path":          file.Path,
-			"restored_path": outputPath}).Info("file restored")
+			"restored_path": outputPath}).Debug("file restored")
 
 	return nil
 }

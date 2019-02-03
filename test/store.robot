@@ -152,6 +152,22 @@ Store multiple files
     ${block dir}=       Get substring  ${large file hash 2}  0  2
     File should exist   ${store dir}/${block dir}/${large file hash 2}.block
 
+Store multiple files and print progress
+    Create index from "${backup source dir}" and save it to "${index}"
+
+    ${result}=  Run process  ${store bin} --progress ${store dir} < ${index}  shell=True
+    Log many    ${result.stdout}
+    Log many    ${result.stderr}
+    Should be equal as integers  ${result.rc}  0  ${result.stderr}
+
+    Should contain  ${result.stderr}  progress
+    Should contain  ${result.stderr}  elapsed_time
+    Should contain  ${result.stderr}  remaining_time
+    Should contain  ${result.stderr}  byte_progress
+    Should contain  ${result.stderr}  file_progress
+    Should contain  ${result.stderr}  errors
+    Should contain  ${result.stderr}  100.00%
+
 ** Keywords **
 Begin test
     Create directory        ${store dir}
