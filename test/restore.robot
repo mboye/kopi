@@ -15,7 +15,7 @@ ${restore dir}          ${TEMPDIR}/restored_data
 ${stored index}         ${TEMPDIR}/index.stored
 
 ** Test Cases **
-File of same size as block size
+Restore small file
     Create index from "${small file}" and save it to "${index}"
     Store index "${index}" to "${store dir}" and save output to "${stored index}"
     Restore index "${stored index}" from "${store dir}" to "${restore dir}"
@@ -23,15 +23,31 @@ File of same size as block size
     File should exist           ${restore dir}/${small file}
     File should have SHA1 hash   ${restore dir}/${small file}  ${small file hash}
 
-File larger than block size
-    Create index from "${large file}" and save it to "${index}"
-    Store index "${index}" to "${store dir}" and save output to "${stored index}"
-    Restore index "${stored index}" from "${store dir}" to "${restore dir}"
+Restore small file with encryption
+    Create index from "${small file}" and save it to "${index}"
+    Store index "${index}" with encryption to "${store dir}" and save output to "${stored index}"
+    Restore index "${stored index}" with encryption from "${store dir}" to "${restore dir}"
 
-    File should exist           ${restore dir}/${large file}
+    File should exist           ${restore dir}/${small file}
+    File should have SHA1 hash  ${restore dir}/${small file}  ${small file hash}
+
+Restore large file
+    Create index from "${large file}" and save it to "${index}"
+    Store index "${index}" with encryption to "${store dir}" and save output to "${stored index}"
+    Restore index "${stored index}" with encryption from "${store dir}" to "${restore dir}"
+
+    File should exist            ${restore dir}/${large file}
     File should have SHA1 hash   ${restore dir}/${large file}  ${large file hash}
 
-Files reuse existing blocks
+Restore large file with encryption
+    Create index from "${large file}" and save it to "${index}"
+    Store index "${index}" with encryption to "${store dir}" and save output to "${stored index}"
+    Restore index "${stored index}" with encryption from "${store dir}" to "${restore dir}"
+
+    File should exist            ${restore dir}/${large file}
+    File should have SHA1 hash   ${restore dir}/${large file}  ${large file hash}
+
+Restore multiple files
     Create index from "${source dir}" and save it to "${index}"
     ${index data}       Get file        ${index}
     ${index lines}      Split to lines  ${index data}
@@ -46,8 +62,18 @@ Files reuse existing blocks
     File should exist           ${restore dir}/${large file}
     File should have SHA1 hash   ${restore dir}/${large file}  ${large file hash}
 
+Restore multiple files with encryption
+    Create index from "${source dir}" and save it to "${index}"
+    Store index "${index}" with encryption to "${store dir}" and save output to "${stored index}"
+    Restore index "${stored index}" with encryption from "${store dir}" to "${restore dir}"
 
-Dry run
+    File should exist           ${restore dir}/${small file}
+    File should have SHA1 hash   ${restore dir}/${small file}  ${small file hash}
+
+    File should exist           ${restore dir}/${large file}
+    File should have SHA1 hash   ${restore dir}/${large file}  ${large file hash}
+
+Restore dry run
     Create index from "${source dir}" and save it to "${index}"
 
     Store index "${index}" to "${store dir}" and save output to "${stored index}"
@@ -59,7 +85,7 @@ Dry run
     Run keyword and expect error  *
     ...     File should exist     ${restore dir}/${large file}
 
-Dry run with missing block
+Restore dry run with missing block
     Create index from "${source dir}" and save it to "${index}"
 
     Store index "${index}" to "${store dir}" and save output to "${stored index}"
@@ -70,7 +96,7 @@ Dry run with missing block
     Run keyword and expect error    *failed to open bloc*
     ...     Restore index dry run "${stored index}" from "${store dir}" to "${restore dir}"
 
-Dry run with block corruption
+Restore dry run with block corruption
     Create index from "${source dir}" and save it to "${index}"
 
     Store index "${index}" to "${store dir}" and save output to "${stored index}"

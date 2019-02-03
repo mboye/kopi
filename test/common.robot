@@ -39,14 +39,35 @@ Store index "${index}" to "${store dir}" and return lines
     ${lines}=   Split to lines  ${result.stdout}
     [Return]   ${lines}
 
+Store index "${index}" with encryption to "${store dir}" and return lines
+    ${result}=  Run process  ${store bin} --encrypt --maxBlockSize ${max block size} ${store dir} < ${index}  shell=True
+    Log many    ${result.stdout}
+    Log many    ${result.stderr}
+    Should be equal as integers  ${result.rc}  0  ${result.stderr}
+
+    ${lines}=   Split to lines  ${result.stdout}
+    [Return]   ${lines}
+
 Store index "${index}" to "${store dir}" and save output to "${output path}"
     ${result}=  Run process  ${store bin} --maxBlockSize ${max block size} ${store dir} < ${index} | tee ${output path}  shell=True
     Log many    ${result.stdout}
     Log many    ${result.stderr}
     Should be equal as integers  ${result.rc}  0  ${result.stderr}
 
+Store index "${index}" with encryption to "${store dir}" and save output to "${output path}"
+    ${result}=  Run process  ${store bin} --encrypt --maxBlockSize ${max block size} ${store dir} < ${index} | tee ${output path}  shell=True
+    Log many    ${result.stdout}
+    Log many    ${result.stderr}
+    Should be equal as integers  ${result.rc}  0  ${result.stderr}
+
 Restore index "${index}" from "${store dir}" to "${restore dir}"
     ${result}=  Run process  ${restore bin} ${store dir} ${restore dir} < ${index}  shell=True
+    Log many    ${result.stdout}
+    Log many    ${result.stderr}
+    Should be equal as integers  ${result.rc}  0  ${result.stderr}
+
+Restore index "${index}" with encryption from "${store dir}" to "${restore dir}"
+    ${result}=  Run process  ${restore bin} --decrypt ${store dir} ${restore dir} < ${index}  shell=True
     Log many    ${result.stdout}
     Log many    ${result.stderr}
     Should be equal as integers  ${result.rc}  0  ${result.stderr}

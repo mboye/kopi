@@ -37,7 +37,7 @@ func main() {
 
 	securityContext, err := security.NewContext(outputDir, *encrypt)
 	if err != nil {
-		log.WithField("error", err).Fatal("failed create security context")
+		log.WithField("error", err).Fatal("failed to create security context")
 	}
 
 	filterAndStoreFile := func(file *model.File) error {
@@ -98,7 +98,7 @@ func storeFile(file *model.File, outputDir string, securityContext *security.Con
 			}
 
 			blockSize := bytesRead
-			hasher.Write(blockData[:blockSize])
+			hasher.Write(blockData)
 			hash := fmt.Sprintf("%x", hasher.Sum(nil))
 			block := model.Block{Hash: hash, Offset: blockOffset, Size: int64(blockSize)}
 
@@ -108,6 +108,11 @@ func storeFile(file *model.File, outputDir string, securityContext *security.Con
 				logger.WithFields(log.Fields{"hash": hash, "offset": blockOffset, "size": blockSize}).Debug("Reusing existing block")
 				file.AddBlock(block)
 				continue
+			}
+
+			encodedBlockData, err := securityContext.Encode(blockData)
+			if err != nil {
+				return err
 			}
 
 			blockDirPath := fmt.Sprintf("%s/%s", outputDir, hash[:2])
@@ -122,13 +127,13 @@ func storeFile(file *model.File, outputDir string, securityContext *security.Con
 			}
 			logger.WithField("output_path", outputPath).Debug("Created output file")
 
-			bytesWritten, err := outputFile.Write(blockData[:blockSize])
+			bytesWritten, err := outputFile.Write(encodedBlockData)
 			if err != nil {
 				outputFile.Close()
 				return err
 			}
 
-			if bytesWritten != blockSize {
+			if bytesWritten != len(encodedBlockData) {
 				return errors.New("Incomplete block write")
 			}
 

@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mboye/kopi/security"
+
 	"github.com/mboye/kopi/model"
 	"github.com/mboye/kopi/util"
 	log "github.com/sirupsen/logrus"
@@ -27,6 +29,7 @@ var encoder = json.NewEncoder(os.Stdout)
 func main() {
 	util.SetLogLevel()
 	dryRun := flag.Bool("dry-run", false, "Dry run. Only verify that index is restorable.")
+	decrypt := flag.Bool("decrypt", false, "Decrypt blocks using AES-256 while restoring")
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -43,17 +46,9 @@ func main() {
 	inputDir := flag.Arg(0)
 	outputDir := flag.Arg(1)
 
-	saltPath := fmt.Sprintf("%s/salt", inputDir)
-	salt := make([]byte, 128)
-	if saltFile, err := os.Open(saltPath); err != nil {
-		log.WithField("error", err).Fatal("failed to open salt file")
-	} else {
-		bytesRead, err := saltFile.Read(salt)
-		if err != nil {
-			log.WithField("error", err).Fatal("failed to read salt")
-		} else if bytesRead != SaltLength {
-			log.WithField("error", err).Fatal("incomplete salt read")
-		}
+	securityContext, err := security.NewContext(inputDir, *decrypt)
+	if err != nil {
+		log.WithField("error", err).Fatal("failed to create security context")
 	}
 
 	log.WithField("destination", outputDir).Info("Beginning to store files")
@@ -62,7 +57,7 @@ func main() {
 		if file.Mode.IsDir() {
 			return restoreDir(file, outputDir, *dryRun)
 		} else {
-			return restoreFile(file, inputDir, outputDir, salt, *dryRun)
+			return restoreFile(file, inputDir, outputDir, securityContext, *dryRun)
 		}
 	}
 
@@ -83,7 +78,7 @@ func restoreDir(file *model.File, outputDir string, dryRun bool) error {
 	return os.MkdirAll(outputPath, file.Mode)
 }
 
-func restoreFile(file *model.File, inputDir, outputDir string, salt []byte, dryRun bool) error {
+func restoreFile(file *model.File, inputDir, outputDir string, securityContext *security.Context, dryRun bool) error {
 	log.WithFields(log.Fields{
 		"path": file.Path,
 		"mode": file.Mode}).Debug("restoring file")
@@ -126,30 +121,35 @@ func restoreFile(file *model.File, inputDir, outputDir string, salt []byte, dryR
 				return err
 			}
 			defer blockFile.Close()
+			log.WithField("path", blockPath).Debug("opened block")
 
-			blockReader := io.LimitReader(blockFile, block.Size)
-			blockData, err := ioutil.ReadAll(blockReader)
+			encodedBlockData, err := ioutil.ReadFile(blockPath)
 			if err != nil {
 				log.WithError(err).Error("failed to read block data")
 				return err
 			}
-			blockSize := len(blockData)
+			log.WithField("size", len(encodedBlockData)).Debug("read block data")
 
-			if blockSize != int(block.Size) {
+			blockData, err := securityContext.Decode(encodedBlockData)
+			actualBlockSize := len(blockData)
+			log.WithField("size", actualBlockSize).Debug("decoded block data")
+
+			if actualBlockSize < int(block.Size) {
 				log.WithFields(
 					log.Fields{
-						"actual_size":   blockSize,
-						"expected_size": block.Size,
-						"block_path":    blockPath}).Error("corrupt block detected")
+						"actual_size":       actualBlockSize,
+						"min_expected_size": block.Size,
+						"block_path":        blockPath}).Error("corrupt block detected")
 
 				return fmt.Errorf("corrupt block: %s", blockPath)
 			}
 
-			hasher := sha1.New()
-			if _, err = hasher.Write(salt); err != nil {
+			hasher, err := securityContext.NewHasher()
+			if err != nil {
 				return err
 			}
-			if _, err = hasher.Write(blockData); err != nil {
+
+			if _, err = hasher.Write(blockData[:block.Size]); err != nil {
 				return err
 			}
 			hash := fmt.Sprintf("%x", hasher.Sum(nil))

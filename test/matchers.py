@@ -116,6 +116,13 @@ def file_should_have_sha1_hash(path, expected_hash):
             "Expected SHA1 hash {}, but got {}".format(expected_hash, actual_hash)
         )
 
+def file_should_be_utf8_encoded(path):
+    try:
+        with open(path, 'rb') as fp:
+            data = fp.read()
+            data.decode('utf-8')
+    except UnicodeError:
+        raise AssertionError('File is not UTF-8 encoded')
 
 class KopiFile(object):
     def __init__(self, file_json):
