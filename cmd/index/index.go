@@ -5,17 +5,22 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
+	"github.com/dustin/go-humanize"
 	"github.com/mboye/kopi/model"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	recursive := true
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	flag.BoolVar(&recursive, "recursive", true, "Index path recursively")
+	recursive := flag.Bool("recursive", true, "Index path recursively")
 	initIndex := flag.Bool("init", false, "Initial index. Mark all files as modified.")
+	printProgress := flag.Bool("progress", true, "Print indexing progress.")
 	flag.Parse()
 
 	rootPath := flag.Arg(0)
@@ -26,20 +31,29 @@ func main() {
 	}
 
 	log.Infof("Indexing path: %s", rootPath)
-	log.Infof("Recursive: %t", recursive)
+	log.Infof("Recursive: %t", *recursive)
 
 	encoder := json.NewEncoder(os.Stdout)
-	fileCount := 0
+	fileCount := int64(0)
+	byteCount := int64(0)
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
-		if err != nil {
+		if os.IsPermission(err) {
+			log.WithField("path", path).Warn("Permission denied")
+		} else if err != nil {
 			log.Errorf("Failed to walk path: %s", path)
 			return err
 		}
 
+		select {
+		case sig := <-signals:
+			log.Fatalf("Received signal: %s", sig.String())
+		default:
+		}
+
 		log.Debugf("Walking path: %s", path)
 
-		if info.IsDir() && path != rootPath && !recursive {
+		if info.IsDir() && path != rootPath && !*recursive {
 			return filepath.SkipDir
 		}
 
@@ -63,6 +77,13 @@ func main() {
 			return err
 		}
 		fileCount++
+		byteCount += size
+
+		if *printProgress && fileCount > 0 && fileCount%1000 == 0 {
+			log.WithFields(log.Fields{
+				"files_found": fileCount,
+				"bytes_found": humanize.Bytes(uint64(byteCount))}).Info("Progress")
+		}
 		return nil
 	}
 

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -15,9 +17,18 @@ import (
 type FileHandlerFunc func(file *model.File) error
 
 func ProcessFiles(handler FileHandlerFunc) error {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
 	decoder := json.NewDecoder(os.Stdin)
 
 	for decoder.More() {
+		select {
+		case sig := <-signals:
+			log.Fatalf("Received signal: %s", sig.String())
+		default:
+		}
+
 		file := &model.File{}
 		if err := decoder.Decode(file); err != nil {
 			return fmt.Errorf("Failed to decode file: %s", err.Error())
@@ -36,6 +47,9 @@ func ProcessFilesWithProgress(handler FileHandlerFunc) error {
 	var maxFiles, maxBytes int64
 	var filesProcessed, bytesProcessed, errorCount int64
 	startTime := time.Now()
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	addToSummary := func(f *model.File) error {
 		files = append(files, f)
@@ -79,6 +93,12 @@ func ProcessFilesWithProgress(handler FileHandlerFunc) error {
 	}
 
 	for _, file := range files {
+		select {
+		case sig := <-signals:
+			log.Fatalf("Received signal: %s", sig.String())
+		default:
+		}
+
 		if err := handler(file); err != nil {
 			return err
 		}
