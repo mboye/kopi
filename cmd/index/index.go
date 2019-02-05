@@ -20,7 +20,7 @@ func main() {
 
 	recursive := flag.Bool("recursive", true, "Index path recursively")
 	initIndex := flag.Bool("init", false, "Initial index. Mark all files as modified.")
-	printProgress := flag.Bool("progress", true, "Print indexing progress.")
+	withProgress := flag.Bool("progress", true, "Print indexing progress.")
 	flag.Parse()
 
 	rootPath := flag.Arg(0)
@@ -36,6 +36,14 @@ func main() {
 	encoder := json.NewEncoder(os.Stdout)
 	fileCount := int64(0)
 	byteCount := int64(0)
+
+	printProgress := func() {
+		if fileCount > 0 && fileCount%1000 == 0 {
+			log.WithFields(log.Fields{
+				"files_found": fileCount,
+				"bytes_found": humanize.Bytes(uint64(byteCount))}).Info("Progress")
+		}
+	}
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if os.IsPermission(err) {
@@ -79,11 +87,10 @@ func main() {
 		fileCount++
 		byteCount += size
 
-		if *printProgress && fileCount > 0 && fileCount%1000 == 0 {
-			log.WithFields(log.Fields{
-				"files_found": fileCount,
-				"bytes_found": humanize.Bytes(uint64(byteCount))}).Info("Progress")
+		if *withProgress {
+			printProgress()
 		}
+
 		return nil
 	}
 
@@ -93,6 +100,7 @@ func main() {
 	}
 
 	log.Infof("Number of files indexed: %d", fileCount)
+	log.Infof("Number of bytes indexed: %s", humanize.Bytes(uint64(byteCount)))
 
 }
 
