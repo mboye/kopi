@@ -65,6 +65,11 @@ func main() {
 			return filepath.SkipDir
 		}
 
+		if !info.IsDir() && !info.Mode().IsRegular() {
+			log.WithField("path", path).Warn("Ignoring non-regular file")
+			return nil
+		}
+
 		size := int64(0)
 		if !info.IsDir() {
 			size = info.Size()
