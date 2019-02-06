@@ -53,7 +53,15 @@ func main() {
 		}
 
 		file.Modified = false
-		return storeFile(file, outputDir, securityContext, *maxBlockSize)
+		err := storeFile(file, outputDir, securityContext, *maxBlockSize)
+		if os.IsNotExist(err) {
+			log.WithField("path", file.Path).Warn("File not found")
+			return nil
+		} else if os.IsPermission(err) {
+			log.WithField("path", file.Path).Warn("Permission denied")
+			return nil
+		}
+		return err
 	}
 
 	log.WithField("destination", outputDir).Info("Beginning to store files")
@@ -69,91 +77,91 @@ func main() {
 
 func storeFile(file *model.File, outputDir string, securityContext *security.Context, maxBlockSize int64) error {
 	if err := refreshFileMetadata(file); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	logger := log.WithField("path", file.Path)
 
-	if inputFile, err := os.Open(file.Path); err != nil {
+	inputFile, err := os.Open(file.Path)
+	if err != nil {
 		return err
-	} else {
-		defer inputFile.Close()
-		fileReader := io.LimitReader(inputFile, file.Size)
+	}
+	defer inputFile.Close()
+	fileReader := io.LimitReader(inputFile, file.Size)
 
-		logger.WithField("max_offset", file.Size).Debug("Read file")
+	logger.WithField("max_offset", file.Size).Debug("Read file")
 
-		fileOffset := int64(0)
-		for fileOffset < file.Size {
-			blockReader := io.LimitReader(fileReader, maxBlockSize)
-			blockOffset := fileOffset
+	fileOffset := int64(0)
+	for fileOffset < file.Size {
+		blockReader := io.LimitReader(fileReader, maxBlockSize)
+		blockOffset := fileOffset
 
-			hasher, err := securityContext.NewHasher()
-			if err != nil {
-				log.WithField("error", err).Fatal("failed to get hasher")
-			}
-
-			blockData, err := ioutil.ReadAll(blockReader)
-			bytesRead := len(blockData)
-			logger.WithField("bytes_read", bytesRead).Debug("Read file")
-
-			fileOffset += int64(bytesRead)
-
-			if int64(bytesRead) != maxBlockSize && fileOffset != file.Size {
-				return errors.New("Incomplete buffer read")
-			}
-
-			blockSize := bytesRead
-			hasher.Write(blockData)
-			hash := fmt.Sprintf("%x", hasher.Sum(nil))
-			block := model.Block{Hash: hash, Offset: blockOffset, Size: int64(blockSize)}
-
-			outputPath := fmt.Sprintf("%s/%s/%s.block", outputDir, hash[:2], hash)
-			_, err = os.Stat(outputPath)
-			if err == nil {
-				logger.WithFields(log.Fields{"hash": hash, "offset": blockOffset, "size": blockSize}).Debug("Reusing existing block")
-				file.AddBlock(block)
-				continue
-			}
-
-			encodedBlockData, err := securityContext.Encode(blockData)
-			if err != nil {
-				return err
-			}
-
-			blockDirPath := fmt.Sprintf("%s/%s", outputDir, hash[:2])
-			err = os.MkdirAll(blockDirPath, 0755)
-			if err != nil {
-				return err
-			}
-
-			outputFile, err := os.Create(outputPath)
-			if err != nil {
-				return err
-			}
-			logger.WithField("output_path", outputPath).Debug("Created output file")
-
-			bytesWritten, err := outputFile.Write(encodedBlockData)
-			if err != nil {
-				outputFile.Close()
-				return err
-			}
-
-			if bytesWritten != len(encodedBlockData) {
-				return errors.New("Incomplete block write")
-			}
-
-			outputFile.Close()
-			file.AddBlock(block)
-			logger.WithFields(log.Fields{"hash": hash, "offset": blockOffset, "size": blockSize}).Debug("Block created")
-
-			logger.WithField("fileOffset", fileOffset).Debug("File offset")
+		hasher, err := securityContext.NewHasher()
+		if err != nil {
+			log.WithField("error", err).Fatal("failed to get hasher")
 		}
 
-		logger.Debug("File read completed")
+		blockData, err := ioutil.ReadAll(blockReader)
+		bytesRead := len(blockData)
+		logger.WithField("bytes_read", bytesRead).Debug("Read file")
 
-		if err := encoder.Encode(file); err != nil {
+		fileOffset += int64(bytesRead)
+
+		if int64(bytesRead) != maxBlockSize && fileOffset != file.Size {
+			return errors.New("Incomplete buffer read")
+		}
+
+		blockSize := bytesRead
+		hasher.Write(blockData)
+		hash := fmt.Sprintf("%x", hasher.Sum(nil))
+		block := model.Block{Hash: hash, Offset: blockOffset, Size: int64(blockSize)}
+
+		outputPath := fmt.Sprintf("%s/%s/%s.block", outputDir, hash[:2], hash)
+		_, err = os.Stat(outputPath)
+		if err == nil {
+			logger.WithFields(log.Fields{"hash": hash, "offset": blockOffset, "size": blockSize}).Debug("Reusing existing block")
+			file.AddBlock(block)
+			continue
+		}
+
+		encodedBlockData, err := securityContext.Encode(blockData)
+		if err != nil {
 			return err
 		}
+
+		blockDirPath := fmt.Sprintf("%s/%s", outputDir, hash[:2])
+		err = os.MkdirAll(blockDirPath, 0755)
+		if err != nil {
+			return err
+		}
+
+		outputFile, err := os.Create(outputPath)
+		if err != nil {
+			return err
+		}
+		logger.WithField("output_path", outputPath).Debug("Created output file")
+
+		bytesWritten, err := outputFile.Write(encodedBlockData)
+		if err != nil {
+			outputFile.Close()
+			return err
+		}
+
+		if bytesWritten != len(encodedBlockData) {
+			return errors.New("Incomplete block write")
+		}
+
+		outputFile.Close()
+		file.AddBlock(block)
+		logger.WithFields(log.Fields{"hash": hash, "offset": blockOffset, "size": blockSize}).Debug("Block created")
+
+		logger.WithField("fileOffset", fileOffset).Debug("File offset")
+	}
+
+	logger.Debug("File read completed")
+
+	if err := encoder.Encode(file); err != nil {
+		return err
 	}
 
 	return nil

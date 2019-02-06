@@ -168,10 +168,31 @@ Store multiple files and print progress
     Should contain  ${result.stderr}  errors
     Should contain  ${result.stderr}  100.00%
 
+Store missing file
+    Copy file           ${small file}  ${small file}-copy
+    Create index from "${backup source dir}" and save it to "${index}"
+    ${index data}       Get file        ${index}
+    ${index lines}      Split to lines  ${index data}
+    Length should be    ${index lines}  4
+
+    Remove file         ${small file}-copy
+
+    ${result}=  Run process  ${store bin} --progress ${store dir} < ${index}  shell=True
+    Log many    ${result.stdout}
+    Log many    ${result.stderr}
+    Should be equal as integers  ${result.rc}  0  ${result.stderr}
+
+    ${stored lines}         Split to lines  ${result.stdout}
+    Length should be        ${stored lines}  3
+
+    Should contain          ${result.stderr}  "File not found"
+    Should contain          ${result.stderr}  ${small file}-copy
+
 ** Keywords **
 Begin test
     Create directory        ${store dir}
     Copy file               test/resources/salt  ${store dir}/salt
 
 End test
-    Remove directory  ${store dir}  recursive=True
+    Remove directory    ${store dir}  recursive=True
+    Remove file         ${small file}-copy
