@@ -23,7 +23,7 @@ func main() {
 	util.SetLogLevel()
 	maxBlockSize := flag.Int64("maxBlockSize", 1024*1024*10, "Split files into blocks of this size")
 	encrypt := flag.Bool("encrypt", false, "Encrypt stored blocks using AES-256")
-	printProgress := flag.Bool("progress", false, "Print progress information to stderr")
+	progressInterval := flag.Uint("progress", 10, "Progres printing interval in seconds. An interval of zero disables printing.")
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -65,11 +65,8 @@ func main() {
 	}
 
 	log.WithField("destination", outputDir).Info("Beginning to store files")
-	if *printProgress {
-		err = input.ProcessFilesWithProgress(filterAndStoreFile)
-	} else {
-		err = input.ProcessFiles(filterAndStoreFile)
-	}
+
+	err = input.ProcessFilesWithProgress(filterAndStoreFile, uint(*progressInterval))
 	if err != nil {
 		log.Fatal(err)
 	}

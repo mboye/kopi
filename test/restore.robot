@@ -111,7 +111,7 @@ Restore multiple files and print progress
     Create index from "${backup source dir}" and save it to "${index}"
     Store index "${index}" to "${store dir}" and save output to "${stored index}"
 
-    ${result}=  Run process  ${restore bin} --progress ${store dir} ${restore dir} < ${stored index}  shell=True
+    ${result}=  Run process  ${restore bin} --progress 1 ${store dir} ${restore dir} < ${stored index}  shell=True
     Log many    ${result.stdout}
     Log many    ${result.stderr}
     Should be equal as integers  ${result.rc}  0  ${result.stderr}
@@ -121,8 +121,8 @@ Restore multiple files and print progress
     Should contain  ${result.stderr}  remaining_time
     Should contain  ${result.stderr}  byte_progress
     Should contain  ${result.stderr}  file_progress
-    Should contain  ${result.stderr}  errors
-    Should contain  ${result.stderr}  100.00%
+    Should contain  ${result.stderr}  \= 0.00%
+    Should contain  ${result.stderr}  \= 100.00%
 
 ** Keywords **
 Begin test

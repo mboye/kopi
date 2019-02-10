@@ -31,7 +31,7 @@ func main() {
 	util.SetLogLevel()
 	dryRun := flag.Bool("dry-run", false, "Dry run. Only verify that index is restorable.")
 	decrypt := flag.Bool("decrypt", false, "Decrypt blocks using AES-256 while restoring")
-	printProgress := flag.Bool("progress", false, "Print progress information to stderr")
+	progressInterval := flag.Uint("progress", 10, "Progres printing interval in seconds. An interval of zero disables printing.")
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -63,11 +63,7 @@ func main() {
 		}
 	}
 
-	if *printProgress {
-		err = input.ProcessFilesWithProgress(restoreFile)
-	} else {
-		err = input.ProcessFiles(restoreFile)
-	}
+	err = input.ProcessFilesWithProgress(restoreFile, uint(*progressInterval))
 	if err != nil {
 		log.Fatal(err)
 	}

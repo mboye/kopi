@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -42,10 +43,10 @@ func ProcessFiles(handler FileHandlerFunc) error {
 	return nil
 }
 
-func ProcessFilesWithProgress(handler FileHandlerFunc) error {
+func ProcessFilesWithProgress(handler FileHandlerFunc, interval uint) error {
 	files := []*model.File{}
 	var maxFiles, maxBytes int64
-	var filesProcessed, bytesProcessed, errorCount int64
+	var filesProcessed, bytesProcessed int64
 	startTime := time.Now()
 
 	signals := make(chan os.Signal, 1)
@@ -62,34 +63,29 @@ func ProcessFilesWithProgress(handler FileHandlerFunc) error {
 		return err
 	}
 
-	printProgress := func() {
-		if bytesProcessed > maxBytes {
-			bytesProcessed = maxFiles
+	progressPrinter := func(stop chan struct{}) {
+		ticker := time.NewTicker(time.Duration(interval * 1e9))
+		for {
+			select {
+			case <-ticker.C:
+				filesProcessedSnapshot := atomic.LoadInt64(&filesProcessed)
+				bytesProcessedSnapshot := atomic.LoadInt64(&bytesProcessed)
+				printProgress(maxFiles, maxBytes, filesProcessedSnapshot, bytesProcessedSnapshot, startTime)
+			case <-stop:
+				return
+			}
 		}
 
-		fileProgress := 100.0 * float32(filesProcessed) / float32(maxFiles)
-		byteProgress := 100.0 * float32(bytesProcessed) / float32(maxBytes)
-		elapsedTime := time.Now().Sub(startTime).Round(time.Second)
+	}
 
-		fileRate := float64(filesProcessed) / elapsedTime.Seconds()
-		byteRate := float64(bytesProcessed) / elapsedTime.Seconds()
-		fileRemainingTime := int64(math.Round(float64(maxFiles-filesProcessed) / fileRate))
-		byteRemainingTime := int64(math.Round(float64(maxBytes-bytesProcessed) / byteRate))
+	if interval > 0 {
+		printProgress(maxFiles, maxBytes, filesProcessed, bytesProcessed, startTime)
 
-		var remainingTime time.Duration
-		if fileRemainingTime > byteRemainingTime {
-			remainingTime = time.Duration(fileRemainingTime * 1e9)
-		} else {
-			remainingTime = time.Duration(byteRemainingTime * 1e9)
-		}
-
-		log.WithFields(log.Fields{
-			"file_progress": fmt.Sprintf("%d / %d = %.2f%%", filesProcessed, maxFiles, fileProgress),
-			"byte_progress": fmt.Sprintf("%s / %s = %.2f%%",
-				humanize.Bytes(uint64(bytesProcessed)), humanize.Bytes(uint64(maxBytes)), byteProgress),
-			"elapsed_time":   elapsedTime.String(),
-			"remaining_time": remainingTime.String(),
-			"errors":         errorCount}).Info("progress")
+		stop := make(chan struct{}, 1)
+		go progressPrinter(stop)
+		defer func() {
+			close(stop)
+		}()
 	}
 
 	for _, file := range files {
@@ -103,10 +99,42 @@ func ProcessFilesWithProgress(handler FileHandlerFunc) error {
 			return err
 		}
 
-		filesProcessed++
-		bytesProcessed += file.Size
-		printProgress()
+		atomic.AddInt64(&filesProcessed, 1)
+		atomic.AddInt64(&bytesProcessed, file.Size)
 	}
+	printProgress(maxFiles, maxBytes, filesProcessed, bytesProcessed, startTime)
 
 	return nil
+}
+
+func printProgress(maxFiles, maxBytes, filesProcessed, bytesProcessed int64, startTime time.Time) {
+	if bytesProcessed > maxBytes {
+		bytesProcessed = maxFiles
+	}
+
+	fileProgress := 100.0 * float32(filesProcessed) / float32(maxFiles)
+	byteProgress := 100.0 * float32(bytesProcessed) / float32(maxBytes)
+	elapsedTime := time.Now().Sub(startTime).Round(time.Second)
+	log.WithField("bytes_processed", bytesProcessed).Info("Debug")
+
+	fileRate := float64(filesProcessed) / elapsedTime.Seconds()
+	byteRate := float64(bytesProcessed) / elapsedTime.Seconds()
+	fileRemainingTime := int64(math.Round(float64(maxFiles-filesProcessed) / fileRate))
+	byteRemainingTime := int64(math.Round(float64(maxBytes-bytesProcessed) / byteRate))
+
+	var remainingTime time.Duration
+	if fileRemainingTime > byteRemainingTime {
+		remainingTime = time.Duration(fileRemainingTime * 1e9)
+	} else {
+		remainingTime = time.Duration(byteRemainingTime * 1e9)
+	}
+
+	log.WithFields(log.Fields{
+		"file_progress": fmt.Sprintf("%d / %d = %.2f%%", filesProcessed, maxFiles, fileProgress),
+		"byte_progress": fmt.Sprintf("%s / %s = %.2f%%",
+			humanize.Bytes(uint64(bytesProcessed)), humanize.Bytes(uint64(maxBytes)), byteProgress),
+		"elapsed_time":   elapsedTime.String(),
+		"remaining_time": remainingTime.String(),
+	}).Info("Progress")
+
 }

@@ -155,7 +155,7 @@ Store multiple files
 Store multiple files and print progress
     Create index from "${backup source dir}" and save it to "${index}"
 
-    ${result}=  Run process  ${store bin} --progress ${store dir} < ${index}  shell=True
+    ${result}=  Run process  ${store bin} --progress 1 ${store dir} < ${index}  shell=True
     Log many    ${result.stdout}
     Log many    ${result.stderr}
     Should be equal as integers  ${result.rc}  0  ${result.stderr}
@@ -165,8 +165,8 @@ Store multiple files and print progress
     Should contain  ${result.stderr}  remaining_time
     Should contain  ${result.stderr}  byte_progress
     Should contain  ${result.stderr}  file_progress
-    Should contain  ${result.stderr}  errors
-    Should contain  ${result.stderr}  100.00%
+    Should contain  ${result.stderr}  \= 0.00%
+    Should contain  ${result.stderr}  \= 100.00%
 
 Store missing file
     Copy file           ${small file}  ${small file}-copy
@@ -177,7 +177,7 @@ Store missing file
 
     Remove file         ${small file}-copy
 
-    ${result}=  Run process  ${store bin} --progress ${store dir} < ${index}  shell=True
+    ${result}=  Run process  ${store bin} ${store dir} < ${index}  shell=True
     Log many    ${result.stdout}
     Log many    ${result.stderr}
     Should be equal as integers  ${result.rc}  0  ${result.stderr}
