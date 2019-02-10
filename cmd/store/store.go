@@ -42,7 +42,6 @@ func main() {
 
 	filterAndStoreFile := func(file *model.File) error {
 		if file.Mode.IsDir() {
-			file.Modified = false
 			encoder.Encode(file)
 			return nil
 		}
@@ -52,7 +51,6 @@ func main() {
 			return nil
 		}
 
-		file.Modified = false
 		err := storeFile(file, outputDir, securityContext, *maxBlockSize)
 		if os.IsNotExist(err) {
 			log.WithField("path", file.Path).Warn("File not found")

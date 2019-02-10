@@ -115,7 +115,6 @@ func printProgress(maxFiles, maxBytes, filesProcessed, bytesProcessed int64, sta
 	fileProgress := 100.0 * float32(filesProcessed) / float32(maxFiles)
 	byteProgress := 100.0 * float32(bytesProcessed) / float32(maxBytes)
 	elapsedTime := time.Now().Sub(startTime).Round(time.Second)
-	log.WithField("bytes_processed", bytesProcessed).Info("Debug")
 
 	fileRate := float64(filesProcessed) / elapsedTime.Seconds()
 	byteRate := float64(bytesProcessed) / elapsedTime.Seconds()

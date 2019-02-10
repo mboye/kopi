@@ -1,6 +1,8 @@
 import re
 import json
 import hashlib
+import gzip
+from datetime import datetime
 
 ROBOT_LIBRARY_SCOPE = 'TEST CASE'
 salt = open('test/resources/salt','rb').read()
@@ -49,6 +51,37 @@ def should_be_valid_index_line(line, path, size, modified=None):
         raise AssertionError(
             'Value key "modified" must always be true if key is present'
         )
+
+
+def should_be_valid_manifest_header(line, today=datetime.utcnow()):
+    doc = json.loads(line)
+    required_keys = ["ID", "date", "description"]
+    type_expectations = [
+        ("ID", str),
+        ("date", str),
+        ("description", str)
+    ]
+
+    for key in required_keys:
+        if not key in doc:
+            raise AssertionError("Header missing key: " + key)
+
+    for key, expected_type in type_expectations:
+        if not isinstance(doc[key], expected_type):
+            raise AssertionError(
+                "Unexpected type of key {}. Expected type {}, but got {}.".format(
+                    key, expected_type, type(doc[key])
+                )
+            )
+
+    print('Basing ID prefix expectation on date: {}'.format(today))
+    expected_id_prefix = today.strftime('%Y/%m/%d')
+    actual_id = doc['ID']
+    if not actual_id.startswith(expected_id_prefix):
+        raise AssertionError('Expected ID to start with {}, but got {}'.format(expected_id_prefix, actual_id))
+
+    if not actual_id.endswith('.manifest'):
+        raise AssertionError('Expected ID to end with ".manifest", but got {}'.format(actual_id))
 
 
 def should_be_index_line_with_blocks(line, blocks):
@@ -124,13 +157,6 @@ def file_should_be_utf8_encoded(path):
     except UnicodeError:
         raise AssertionError('File is not UTF-8 encoded')
 
-class KopiFile(object):
-    def __init__(self, file_json):
-        self.path = file_json["path"]
-        # self.diff = file_json['diff']
-
-
-def parse_file_line(lines, index):
-    index = int(index)
-    data = json.loads(lines[index])
-    return KopiFile(data)
+def get_decompressed_file(path):
+    with gzip.open(path, 'rb') as fp:
+        return fp.read().decode('utf8')

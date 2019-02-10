@@ -3,6 +3,7 @@ ${differ bin}           bin/kopi-diff
 ${indexer bin}          bin/kopi-index
 ${store bin}            bin/kopi-store
 ${restore bin}          bin/kopi-restore
+${manifest bin}         bin/kopi-manifest
 
 ${store dir}            ${TEMPDIR}/simple_store_data
 ${index}                ${TEMPDIR}/index

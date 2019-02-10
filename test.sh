@@ -8,4 +8,5 @@ robot --debugfile debug.log \
     test/indexing.robot \
     test/diffing.robot \
     test/store.robot \
-    test/restore.robot
+    test/restore.robot \
+    test/manifest.robot
