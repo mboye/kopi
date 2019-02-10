@@ -167,7 +167,7 @@ func restoreFile(file *model.File, inputDir, outputDir string, securityContext *
 			}
 
 			if !dryRun {
-				if _, err = outputFile.Write(blockData); err != nil {
+				if _, err = outputFile.Write(blockData[:block.Size]); err != nil {
 					log.WithError(err).Error("failed to restore block")
 					return err
 				}
