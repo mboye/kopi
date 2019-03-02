@@ -7,6 +7,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"hash"
+	"io"
 	"io/ioutil"
 	"os"
 
@@ -106,13 +107,13 @@ func (ctx *Context) Encode(input []byte) ([]byte, error) {
 		return input, nil
 	}
 
-	blockSize := ctx.cipherBlock.BlockSize()
-	iv := make([]byte, blockSize)
-	if bytesRead, err := rand.Read(iv); err != nil {
-		return nil, fmt.Errorf("failed to generate IV: %s", err.Error())
-	} else if bytesRead != blockSize {
-		return nil, fmt.Errorf("incomplete IV read: %d out of %d bytes read", bytesRead, blockSize)
+	cipher, err := cipher.NewGCM(ctx.cipherBlock)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init cipher: %s", err.Error())
 	}
+
+	nonceSize := cipher.NonceSize()
+	blockSize := ctx.cipherBlock.BlockSize()
 
 	inputSize := len(input)
 	paddingSize := 0
@@ -133,17 +134,19 @@ func (ctx *Context) Encode(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("incomplete clear text padding: %d out of %d bytes read", bytesRead, paddingSize)
 	}
 
-	output := make([]byte, inputSize+paddingSize+blockSize)
-	copy(output, iv)
+	nonce := make([]byte, nonceSize)
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, fmt.Errorf("failed to read nonce: %s", err.Error())
+	}
 
 	log.WithFields(log.Fields{
 		"block_size":        blockSize,
 		"clear_text":        inputSize,
-		"padded_clear_text": len(paddedInput),
-		"cipher_text_size":  len(output)}).Debug("encrypting")
+		"padded_clear_text": len(paddedInput)}).Debug("encrypting")
 
-	encrypter := cipher.NewCBCEncrypter(ctx.cipherBlock, iv)
-	encrypter.CryptBlocks(output[blockSize:], paddedInput)
+	cipherText := cipher.Seal(nil, nonce, paddedInput, nil)
+
+	output := append(nonce, cipherText...)
 	return output, nil
 }
 
@@ -159,18 +162,25 @@ func (ctx *Context) Decode(input []byte) (output []byte, err error) {
 		}
 	}()
 
-	blockSize := ctx.cipherBlock.BlockSize()
-	iv := input[:blockSize]
-
-	if len(input)%blockSize != 0 {
-		return nil, fmt.Errorf("input size is not a multiple of block size")
+	cipher, err := cipher.NewGCM(ctx.cipherBlock)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init cipher: %s", err.Error())
 	}
 
-	cipherTextSize := len(input) - blockSize
+	nonceSize := cipher.NonceSize()
+	blockSize := ctx.cipherBlock.BlockSize()
+	nonce := input[:nonceSize]
+
+	cipherTextSize := len(input) - nonceSize
+
+	if cipherTextSize%blockSize != 0 {
+		return nil, fmt.Errorf("cipher text size is not a multiple of block size")
+	}
 	log.WithField("size", cipherTextSize).Debug("decrypting block data")
 
-	output = make([]byte, len(input)-blockSize)
-	decrypter := cipher.NewCBCDecrypter(ctx.cipherBlock, iv)
-	decrypter.CryptBlocks(output, input[blockSize:])
+	output, err = cipher.Open(nil, nonce, input[nonceSize:], nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt: %s", err.Error())
+	}
 	return output, nil
 }
