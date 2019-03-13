@@ -51,7 +51,7 @@ Restore multiple files
     Create index from "${source dir}" and save it to "${index}"
     ${index data}       Get file        ${index}
     ${index lines}      Split to lines  ${index data}
-    Length should be    ${index lines}  3
+    Length should be    ${index lines}  4
 
     Store index "${index}" to "${store dir}" and save output to "${stored index}"
     Restore index "${stored index}" from "${store dir}" to "${restore dir}"
@@ -61,6 +61,9 @@ Restore multiple files
 
     File should exist           ${restore dir}/${large file}
     File should have SHA1 hash   ${restore dir}/${large file}  ${large file hash}
+
+    File should exist           ${restore dir}/${empty file}
+    File should have SHA1 hash   ${restore dir}/${empty file}  ${empty file hash}
 
 Restore multiple files with encryption
     Create index from "${source dir}" and save it to "${index}"
@@ -72,6 +75,9 @@ Restore multiple files with encryption
 
     File should exist           ${restore dir}/${large file}
     File should have SHA1 hash   ${restore dir}/${large file}  ${large file hash}
+
+    File should exist           ${restore dir}/${empty file}
+    File should have SHA1 hash   ${restore dir}/${empty file}  ${empty file hash}
 
 Restore dry run
     Create index from "${source dir}" and save it to "${index}"

@@ -86,8 +86,8 @@ func restoreFile(file *model.File, inputDir, outputDir string, securityContext *
 		"path": file.Path,
 		"mode": file.Mode}).Debug("restoring file")
 
-	if file.Blocks == nil || len(file.Blocks) == 0 {
-		return errors.New("cannot restore file without blocks")
+	if file.Size > 0 && (file.Blocks == nil || len(file.Blocks) == 0) {
+		return errors.New("cannot restore non-empty file without blocks")
 	}
 
 	outputPath := fmt.Sprintf("%s/%s", outputDir, file.Path)
@@ -106,6 +106,10 @@ func restoreFile(file *model.File, inputDir, outputDir string, securityContext *
 			return err
 		}
 		defer outputFile.Close()
+
+		if file.Size == 0 {
+			return nil
+		}
 	}
 
 	progress := 0

@@ -16,6 +16,8 @@ ${small file hash}      a2e94dfda3eb76fdb96649cea308ec07dde3243c
 ${large file hash}      aa2695f48e73a2e338dd20a6a501a8ad2d39c757
 ${large file hash 1}    ${small file hash}
 ${large file hash 2}    94794e6c56dca74fd44cc77e693523233c6022af
+${empty file}           test/resources/store/empty-file
+${empty file hash}      318f7856ed3b2050346de77f571469876e18e59f
 
 ** Keywords **
 Create index from "${path}" and return lines

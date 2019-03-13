@@ -23,7 +23,7 @@ Write manifest
 
     ${data}=                    Get decompressed file   ${store dir}/manifests/${manifest id}
     ${lines}                    Split to lines          ${data}
-    Length should be            ${lines}                4
+    Length should be            ${lines}                5
 
     ${header}=                       Get from list   ${lines}  0
     Should be valid manifest header  ${header}
@@ -48,7 +48,7 @@ Read manifest
     Should be equal as strings  ${description}  ${description read}
 
     ${lines}=           Split to lines  ${result.stdout}
-    Length should be    ${lines}    3
+    Length should be    ${lines}    4
 
 ** Keywords **
 Begin test

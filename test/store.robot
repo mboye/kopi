@@ -183,7 +183,7 @@ Store missing file
     Create index from "${backup source dir}" and save it to "${index}"
     ${index data}       Get file        ${index}
     ${index lines}      Split to lines  ${index data}
-    Length should be    ${index lines}  4
+    Length should be    ${index lines}  5
 
     Remove file         ${small file}-copy
 
@@ -193,10 +193,27 @@ Store missing file
     Should be equal as integers  ${result.rc}  0  ${result.stderr}
 
     ${stored lines}         Split to lines  ${result.stdout}
-    Length should be        ${stored lines}  3
+    Length should be        ${stored lines}  4
 
     Should contain          ${result.stderr}  "File not found"
     Should contain          ${result.stderr}  ${small file}-copy
+
+Store empty file
+    Create index from "${empty file}" and save it to "${index}"
+    ${index data}       Get file        ${index}
+    ${index lines}      Split to lines  ${index data}
+    Length should be    ${index lines}  1
+
+    ${lines}=               Store index "${index}" to "${store dir}" and return lines
+    Length should be        ${lines}  1
+    ${line}                 Get from list  ${lines}  0
+
+    Should be index line with block count   ${line}  0
+
+    ${block dir}=       Get substring  ${empty file hash}  0  2
+    Set test variable   ${block path}  ${store dir}/${block dir}/${empty file hash}.block
+    Run keyword and expect error  *
+    ...     File should exist   ${block path}
 
 ** Keywords **
 Begin test
