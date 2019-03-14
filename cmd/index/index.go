@@ -66,7 +66,7 @@ func main() {
 		}
 
 		if !info.IsDir() && !info.Mode().IsRegular() {
-			log.WithField("path", path).Warn("Ignoring non-regular file")
+			log.WithField("path", path).Debug("Ignoring non-regular file")
 			return nil
 		}
 

@@ -79,29 +79,28 @@ func readManifest(sourceDir string, decrypt bool, id string) error {
 	}
 	defer manifestFile.Close()
 
-	decompressor, err := gzip.NewReader(manifestFile)
-	if err != nil {
-		return fmt.Errorf("failed to create decompressor: %s", err.Error())
-	}
-	decompressor.Close()
-
-	encodedData, err := ioutil.ReadAll(decompressor)
-	if err != nil {
-		return fmt.Errorf("failed to decompress manifest: %s", err.Error())
-	}
-
 	securityContext, err := security.NewContext(sourceDir, decrypt)
 	if err != nil {
 		return fmt.Errorf("failed to create security context: %s", err.Error())
 	}
 
-	data, err := securityContext.Decode(encodedData)
+	encodedData, err := ioutil.ReadAll(manifestFile)
+	if err != nil {
+		return fmt.Errorf("failed to decompress manifest: %s", err.Error())
+	}
+
+	compressedData, err := securityContext.Decode(encodedData)
 	if err != nil {
 		return fmt.Errorf("failed to decode manifest: %s", err.Error())
 	}
 
-	buffer := bytes.NewBuffer(data)
-	decoder := json.NewDecoder(buffer)
+	decompressor, err := gzip.NewReader(bytes.NewBuffer(compressedData))
+	if err != nil {
+		return fmt.Errorf("failed to create decompressor: %s", err.Error())
+	}
+	defer decompressor.Close()
+
+	decoder := json.NewDecoder(decompressor)
 	decoder.DisallowUnknownFields()
 
 	header := manifestHeader{}
