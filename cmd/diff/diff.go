@@ -68,19 +68,24 @@ func loadIndex(path string) (index.Index, error) {
 }
 
 func markIndexChanges(indexA, indexB index.Index) {
+	modifiedCount := int64(0)
 	diffWalker := func(pathB string, fileB *model.File) error {
 		if fileA := indexA.Find(pathB); fileA != nil {
 			if !model.FilesEqual(fileA, fileB) {
 				fileB.Modified = true
+				modifiedCount++
 			}
 		} else {
 			fileB.Modified = true
+			modifiedCount++
 		}
 
 		return nil
 	}
 
 	indexB.Walk(diffWalker)
+
+	log.WithField("modified_files", modifiedCount).Info("Diffing completed")
 }
 
 func printUsage() {
