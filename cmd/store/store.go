@@ -48,6 +48,7 @@ func main() {
 
 		if !file.Modified {
 			log.WithField("path", file.Path).Debug("Skipping unmodified file")
+			encoder.Encode(file)
 			return nil
 		}
 

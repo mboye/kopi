@@ -9,6 +9,12 @@ Resource    common.robot
 Test Setup     Begin test
 Test Teardown  End test
 
+** Variables **
+${index a}          ${TEMPDIR}/index.a
+${index b}          ${TEMPDIR}/index.b
+${diff}             ${TEMPDIR}/index.diff
+${stored index}     ${TEMPDIR}/index.stored
+
 ** Test Cases **
 Store small file
     Create index from "${small file}" and save it to "${index}"
@@ -215,6 +221,28 @@ Store empty file
     Run keyword and expect error  *
     ...     File should exist   ${block path}
 
+Store diff
+    Create index from "test/resources/diff" and save it to "${index a}"
+    Sleep   2s
+    Touch   test/resources/diff/file-a.txt
+    Create index from "test/resources/diff" and save it to "${index b}"
+
+    ${lines}   Diff indices ${index a} and ${index b}, and save result to ${diff}
+    Length should be    ${lines}    4
+
+    Store index "${diff}" to "${store dir}" and save output to "${stored index}"
+
+    ${stored index data}    Get file                        ${stored index}
+
+    # Stored index should contain 4 index lines
+    ${stored index lines}   Split to lines                  ${stored index data}
+    Length should be        ${lines}  4
+
+    # Stored index should contain only 1 modified index line
+    ${matches}=             Get lines containing string     ${stored index data}    "modified":true
+    ${modified lines}       Split to lines                  ${matches}
+    Length should be        ${modified lines}   1
+
 ** Keywords **
 Begin test
     Create directory        ${store dir}
@@ -223,3 +251,15 @@ Begin test
 End test
     Remove directory    ${store dir}  recursive=True
     Remove file         ${small file}-copy
+    Remove file         ${index a}
+    Remove file         ${index b}
+    Remove file         ${diff}
+    Remove file         ${stored index}
+
+Diff indices ${path a} and ${path b}, and save result to ${diff output}
+    ${result}=  Run process  ${differ bin} ${path a} ${path b} | tee "${diff output}"  shell=True
+    Log many    ${result.stdout}
+    Log many    ${result.stderr}
+    Should be equal as integers  ${result.rc}  0  ${result.stderr}
+    ${lines}=   Split to lines  ${result.stdout}
+    [Return]   ${lines}

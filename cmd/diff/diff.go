@@ -59,6 +59,7 @@ func loadIndex(path string) (index.Index, error) {
 			return nil, fmt.Errorf("failed to decode file: %s", err.Error())
 		}
 
+		file.Modified = false
 		if err := index.Add(file); err != nil {
 			return nil, err
 		}

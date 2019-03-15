@@ -34,5 +34,5 @@ func (f *File) AddBlock(block Block) {
 }
 
 func FilesEqual(a, b *File) bool {
-	return a.Path == b.Path && a.Size == b.Size && a.ModifiedTime == b.ModifiedTime && a.Mode == b.Mode
+	return a.Path == b.Path && a.Size == b.Size && a.ModifiedTime.UTC() == b.ModifiedTime.UTC() && a.Mode == b.Mode
 }
