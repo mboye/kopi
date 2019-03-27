@@ -1,6 +1,7 @@
 package input
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -33,6 +34,14 @@ func ProcessFiles(handler FileHandlerFunc) error {
 		file := &model.File{}
 		if err := decoder.Decode(file); err != nil {
 			return fmt.Errorf("Failed to decode file: %s", err.Error())
+		}
+
+		if file.ConvertedPath {
+			originalPath, err := base64.RawStdEncoding.DecodeString(file.Path)
+			if err != nil {
+				return fmt.Errorf("Failed to decode file path: %s", err.Error())
+			}
+			file.Path = string(originalPath)
 		}
 
 		if err := handler(file); err != nil {

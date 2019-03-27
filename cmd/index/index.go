@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"unicode/utf8"
 
 	"github.com/dustin/go-humanize"
 	"github.com/mboye/kopi/model"
@@ -46,6 +48,13 @@ func main() {
 	}
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
+		convertedPath := false
+		if !utf8.ValidString(path) {
+			log.WithField("path", path).Warn("path is invalid utf8 string; converting path to base64")
+			path = base64.RawStdEncoding.EncodeToString([]byte(path))
+			convertedPath = true
+		}
+
 		if os.IsPermission(err) {
 			log.WithField("path", path).Warn("Permission denied")
 		} else if err != nil {
@@ -76,10 +85,11 @@ func main() {
 		}
 
 		file := &model.File{
-			Path:         path,
-			Size:         size,
-			Mode:         info.Mode(),
-			ModifiedTime: info.ModTime().UTC()}
+			Path:          path,
+			ConvertedPath: convertedPath,
+			Size:          size,
+			Mode:          info.Mode(),
+			ModifiedTime:  info.ModTime().UTC()}
 
 		if *initIndex {
 			file.Modified = true

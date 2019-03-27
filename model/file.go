@@ -7,12 +7,13 @@ import (
 )
 
 type File struct {
-	Path         string      `json:"path"`
-	Size         int64       `json:"size"`
-	ModifiedTime time.Time   `json:"modifiedTime"`
-	Mode         os.FileMode `json:"mode"`
-	Modified     bool        `json:"modified,omitempty"`
-	Blocks       []Block     `json:"blocks,omitempty"`
+	Path          string      `json:"path"`
+	ConvertedPath bool        `json:"convertedPath,omitEmpty"`
+	Size          int64       `json:"size"`
+	ModifiedTime  time.Time   `json:"modifiedTime"`
+	Mode          os.FileMode `json:"mode"`
+	Modified      bool        `json:"modified,omitempty"`
+	Blocks        []Block     `json:"blocks,omitempty"`
 }
 
 type Block struct {
