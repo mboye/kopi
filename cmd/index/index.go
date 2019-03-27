@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"unicode/utf8"
 
 	"github.com/dustin/go-humanize"
 	"github.com/mboye/kopi/model"
@@ -46,6 +47,11 @@ func main() {
 	}
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
+		if !utf8.ValidString(path) {
+			log.WithField("path", path).Warn("ignoring file with non-utf8 path")
+			return nil
+		}
+
 		if os.IsPermission(err) {
 			log.WithField("path", path).Warn("Permission denied")
 		} else if err != nil {
