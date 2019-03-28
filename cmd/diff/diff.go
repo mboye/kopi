@@ -74,6 +74,9 @@ func markIndexChanges(indexA, indexB index.Index) {
 			if !model.FilesEqual(fileA, fileB) {
 				fileB.Modified = true
 				modifiedCount++
+			} else {
+				// Preserve blocks of unmodified file
+				fileB.Blocks = fileA.Blocks
 			}
 		} else {
 			fileB.Modified = true

@@ -29,9 +29,10 @@ Create index from "${path}" and return lines
     [Return]    ${index lines}
 
 Create index from "${path}" and save it to "${output path}"
-    ${result}=  Run process  ${indexer bin} --init\=true ${path} | tee ${output path}  shell=True
-    Log many    ${result.stdout}
-    Log many    ${result.stderr}
+    ${result}=  Run process  ${indexer bin} --init\=true ${path} > ${output path}  shell=True
+    ${stdout data}=     Get file  ${output path}
+    Log many            ${stdout data}
+    Log many            ${result.stderr}
     Should be equal as integers  ${result.rc}  0  ${result.stderr}
 
 Store index "${index}" to "${store dir}" and return lines
@@ -53,15 +54,18 @@ Store index "${index}" with encryption to "${store dir}" and return lines
     [Return]   ${lines}
 
 Store index "${index}" to "${store dir}" and save output to "${output path}"
-    ${result}=  Run process  ${store bin} --maxBlockSize ${max block size} ${store dir} < ${index} | tee ${output path}  shell=True
-    Log many    ${result.stdout}
-    Log many    ${result.stderr}
+    ${result}=  Run process  ${store bin} --maxBlockSize ${max block size} ${store dir} < ${index} > ${output path}  shell=True
+    ${stdout data}=     Get file  ${output path}
+    Log many            ${stdout data}
+    Log many            ${result.stderr}
+
     Should be equal as integers  ${result.rc}  0  ${result.stderr}
 
 Store index "${index}" with encryption to "${store dir}" and save output to "${output path}"
-    ${result}=  Run process  ${store bin} --encrypt --maxBlockSize ${max block size} ${store dir} < ${index} | tee ${output path}  shell=True
-    Log many    ${result.stdout}
-    Log many    ${result.stderr}
+    ${result}=  Run process  ${store bin} --encrypt --maxBlockSize ${max block size} ${store dir} < ${index} > ${output path}  shell=True
+    ${stdout data}=     Get file  ${output path}
+    Log many            ${stdout data}
+    Log many            ${result.stderr}
     Should be equal as integers  ${result.rc}  0  ${result.stderr}
 
 Restore index "${index}" from "${store dir}" to "${restore dir}"

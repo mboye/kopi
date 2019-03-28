@@ -18,7 +18,7 @@ def should_be_valid_index_line(line, path, size, modified=None):
         ("size", int),
     ]
 
-    if modified:
+    if modified == True:
         required_keys.append("modified")
         type_expectations.append(("modified", bool))
 
@@ -47,10 +47,25 @@ def should_be_valid_index_line(line, path, size, modified=None):
             "Unexpected size. Expected {}, but got {}".format(size, doc["size"])
         )
 
-    if modified and doc["modified"] != True:
-        raise AssertionError(
-            'Value key "modified" must always be true if key is present'
-        )
+    if modified is None:
+        print("File modification flag not evaluated")
+        return
+
+    modified = (modified == 'True')
+    if modified:
+        if "modified" not in doc:
+            raise AssertionError('Value key "modified" is missing')
+
+        if doc["modified"] != True:
+            raise AssertionError(
+                'Value key "modified" should be {}, but was {}'.format(modified, doc["modified"])
+            )
+        print("File marked as modified")
+    else:
+        if "modified" in doc:
+            raise AssertionError('Value key "modified" should not be present')
+        print("File not marked as modified")
+
 
 
 def should_be_valid_manifest_header(line, today=datetime.utcnow()):
