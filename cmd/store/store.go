@@ -176,7 +176,7 @@ func refreshFileMetadata(file *model.File) error {
 		if file.ModifiedTime.UTC() != fileInfo.ModTime().UTC() {
 			log.WithFields(log.Fields{"path": file.Path, "expected_modtime": file.ModifiedTime, "actual_modtime": fileInfo.ModTime()}).Warn("File modification time has changed")
 		}
-		file.ModifiedTime = fileInfo.ModTime()
+		file.ModifiedTime = fileInfo.ModTime().UTC()
 
 		if file.Mode != fileInfo.Mode() {
 			log.WithFields(log.Fields{"path": file.Path, "expected_mode": file.Mode, "actual_mode": fileInfo.Mode()}).Warn("File mode has changed")
