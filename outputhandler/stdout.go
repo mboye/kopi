@@ -2,6 +2,7 @@ package outputhandler
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 )
 
@@ -11,6 +12,10 @@ func NewStdoutHandler() OutputHandler {
 	return &stdoutHandler{encoder: json.NewEncoder(os.Stdout)}
 }
 
-func (oh *stdoutHandler) Handle(obj interface{}) error {
-	return oh.encoder.Encode(obj)
+func (oh *stdoutHandler) Handle(obj interface{}) (err error) {
+	err = oh.encoder.Encode(obj)
+	if err != nil {
+		log.Fatalf("failed to encode: %s", err.Error())
+	}
+	return
 }

@@ -14,8 +14,8 @@ import (
 	"github.com/mboye/kopi/input"
 	"github.com/mboye/kopi/security"
 
+	_ "github.com/mboye/kopi/loglevel"
 	"github.com/mboye/kopi/model"
-	"github.com/mboye/kopi/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,7 +28,6 @@ type fileHandlerFunc func(file *model.File) error
 var encoder = json.NewEncoder(os.Stdout)
 
 func main() {
-	util.SetLogLevel()
 	dryRun := flag.Bool("dry-run", false, "Dry run. Only verify that index is restorable.")
 	decrypt := flag.Bool("decrypt", false, "Decrypt blocks using AES-256 while restoring")
 	progressInterval := flag.Uint("progress", 10, "Progres printing interval in seconds. An interval of zero disables printing.")

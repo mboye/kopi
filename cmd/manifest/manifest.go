@@ -14,9 +14,9 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/mboye/kopi/input"
+	_ "github.com/mboye/kopi/loglevel"
 	"github.com/mboye/kopi/model"
 	"github.com/mboye/kopi/security"
-	"github.com/mboye/kopi/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -30,8 +30,6 @@ var encoder = json.NewEncoder(os.Stdout)
 var readFlags, writeFlags *flag.FlagSet
 
 func main() {
-	util.SetLogLevel()
-
 	writeFlags = flag.NewFlagSet("write", flag.ExitOnError)
 	encrypt := writeFlags.Bool("encrypt", false, "Encrypt manifest contents using AES-256")
 	description := writeFlags.String("description", "", "Manifest description e.g. monthly backup 2019/1")

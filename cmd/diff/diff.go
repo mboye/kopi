@@ -8,13 +8,12 @@ import (
 	"path/filepath"
 
 	"github.com/mboye/kopi/index"
+	_ "github.com/mboye/kopi/loglevel"
 	"github.com/mboye/kopi/model"
-	"github.com/mboye/kopi/util"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	util.SetLogLevel()
 	flag.Parse()
 
 	if flag.NArg() != 2 {

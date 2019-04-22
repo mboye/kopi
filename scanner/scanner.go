@@ -12,12 +12,9 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/mboye/kopi/model"
 	oh "github.com/mboye/kopi/outputhandler"
+	"github.com/mboye/kopi/stage"
 	log "github.com/sirupsen/logrus"
 )
-
-type Scanner interface {
-	Execute() error
-}
 
 type scanner struct {
 	rootPath     string
@@ -26,7 +23,9 @@ type scanner struct {
 	withProgress bool
 }
 
-func New(rootPath string, recursive bool, initial bool, withProgress bool) (Scanner, error) {
+var _ stage.Stage = (*scanner)(nil)
+
+func New(rootPath string, recursive bool, initial bool, withProgress bool) (stage.Stage, error) {
 	if rootPath == "" {
 		return nil, errors.New("cannot scan empty path")
 	}
@@ -38,7 +37,6 @@ func New(rootPath string, recursive bool, initial bool, withProgress bool) (Scan
 }
 
 func (s *scanner) Execute() error {
-
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	defer signal.Reset(syscall.SIGINT, syscall.SIGTERM)

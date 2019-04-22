@@ -6,6 +6,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func init() {
+	SetLogLevel()
+}
+
 // SetLogLevel detects and sets the log level from the environment variable KOPI_LOG_LEVEL.
 // The following values are supported: DEBUG, INFO, WARN, ERROR, FATAL, and PANIC.
 func SetLogLevel() {
